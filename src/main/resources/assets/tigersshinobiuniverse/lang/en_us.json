@@ -1,0 +1,13 @@
+{
+  "itemGroup.tigersshinobiuniverse": "Example Mod Tab",
+  "block.tigersshinobiuniverse.example_block": "Example Block",
+  "item.tigersshinobiuniverse.example_item": "Example Item",
+
+  "tigersshinobiuniverse.configuration.title": "TigersShinobiUniverse Configs",
+  "tigersshinobiuniverse.configuration.section.tigersshinobiuniverse.common.toml": "TigersShinobiUniverse Configs",
+  "tigersshinobiuniverse.configuration.section.tigersshinobiuniverse.common.toml.title": "TigersShinobiUniverse Configs",
+  "tigersshinobiuniverse.configuration.items": "Item List",
+  "tigersshinobiuniverse.configuration.logDirtBlock": "Log Dirt Block",
+  "tigersshinobiuniverse.configuration.magicNumberIntroduction": "Magic Number Text",
+  "tigersshinobiuniverse.configuration.magicNumber": "Magic Number"
+}
