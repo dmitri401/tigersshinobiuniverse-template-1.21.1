@@ -12,5 +12,7 @@
   "tigersshinobiuniverse.configuration.items": "Item List",
   "tigersshinobiuniverse.configuration.logDirtBlock": "Log Dirt Block",
   "tigersshinobiuniverse.configuration.magicNumberIntroduction": "Magic Number Text",
-  "tigersshinobiuniverse.configuration.magicNumber": "Magic Number"
+  "tigersshinobiuniverse.configuration.magicNumber": "Magic Number",
+
+  "screen.tigersshinobiuniverse.shinobi_stats": "Shinobi Stats"
 }

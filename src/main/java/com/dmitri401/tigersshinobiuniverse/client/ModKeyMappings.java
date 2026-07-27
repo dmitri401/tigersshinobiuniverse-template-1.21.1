@@ -6,13 +6,38 @@ import org.lwjgl.glfw.GLFW;
 
 public final class ModKeyMappings {
 
-    public static final KeyMapping ACTIVATE_JUTSU =
+    public static final KeyMapping HAND_SIGN_1 =
             new KeyMapping(
-                    "key.tigersshinobiuniverse.activate_jutsu",
+                    "key.tigersshinobiuniverse.hand_sign_1",
                     InputConstants.Type.KEYSYM,
                     GLFW.GLFW_KEY_R,
                     "key.categories.tigersshinobiuniverse"
             );
+
+    public static final KeyMapping HAND_SIGN_2 =
+            new KeyMapping(
+                    "key.tigersshinobiuniverse.hand_sign_2",
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_F,
+                    "key.categories.tigersshinobiuniverse"
+            );
+
+    public static final KeyMapping HAND_SIGN_3 =
+            new KeyMapping(
+                    "key.tigersshinobiuniverse.hand_sign_3",
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_C,
+                    "key.categories.tigersshinobiuniverse"
+            );
+
+    public static final KeyMapping MENU =
+            new KeyMapping(
+                    "key.tigersshinobiuniverse.menu",
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_V,
+                    "key.categories.tigersshinobiuniverse"
+            );
+
 
     private ModKeyMappings() {
     }

@@ -40,7 +40,10 @@ public class TigersShinobiUniverseClient {
     private void registerKeyMappings(
             RegisterKeyMappingsEvent event
     ) {
-        event.register(ModKeyMappings.ACTIVATE_JUTSU);
+        event.register(ModKeyMappings.HAND_SIGN_1);
+        event.register(ModKeyMappings.HAND_SIGN_2);
+        event.register(ModKeyMappings.HAND_SIGN_3);
+        event.register(ModKeyMappings.MENU);
     }
 
     @SubscribeEvent

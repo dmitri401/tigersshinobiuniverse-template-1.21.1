@@ -1,6 +1,5 @@
 package com.dmitri401.tigersshinobiuniverse.client;
 
-import com.dmitri401.tigersshinobiuniverse.Config;
 import com.dmitri401.tigersshinobiuniverse.TigersShinobiUniverse;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -8,6 +7,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import com.dmitri401.tigersshinobiuniverse.client.screen.ShinobiStatsScreen;
 
 @EventBusSubscriber(
         modid = TigersShinobiUniverse.MOD_ID,
@@ -19,34 +19,37 @@ public final class ClientKeyEvents {
     }
 
     @SubscribeEvent
-    public static void onClientTick(
-            ClientTickEvent.Post event
-    ) {
+    public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
 
-        if (minecraft.player == null) {
+        if (minecraft.player == null || minecraft.level == null) {
             return;
         }
 
-        if (minecraft.level == null) {
-            return;
+        while (ModKeyMappings.HAND_SIGN_1.consumeClick()) {
+            showMessage(minecraft, "Hand Sign 1");
         }
 
-        while (ModKeyMappings.ACTIVATE_JUTSU.consumeClick()) {
-            activateTestJutsu(minecraft);
+        while (ModKeyMappings.HAND_SIGN_2.consumeClick()) {
+            showMessage(minecraft, "Hand Sign 2");
+        }
+
+        while (ModKeyMappings.HAND_SIGN_3.consumeClick()) {
+            showMessage(minecraft, "Hand Sign 3");
+        }
+
+        while (ModKeyMappings.MENU.consumeClick()) {
+            minecraft.setScreen(new ShinobiStatsScreen());
         }
     }
 
-    private static void activateTestJutsu(
-            Minecraft minecraft
+    private static void showMessage(
+            Minecraft minecraft,
+            String message
     ) {
-        if (Config.SHOW_JUTSU_TEST_MESSAGE.get()) {
-            minecraft.player.displayClientMessage(
-                    Component.literal(
-                            "Jutsu button pressed!"
-                    ),
-                    true
-            );
-        }
+        minecraft.player.displayClientMessage(
+                Component.literal(message),
+                true
+        );
     }
 }
