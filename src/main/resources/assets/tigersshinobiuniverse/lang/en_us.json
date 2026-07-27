@@ -14,5 +14,12 @@
   "tigersshinobiuniverse.configuration.magicNumberIntroduction": "Magic Number Text",
   "tigersshinobiuniverse.configuration.magicNumber": "Magic Number",
 
+  "screen.tigersshinobiuniverse.character_creator": "Create Your Shinobi",
+  "screen.tigersshinobiuniverse.character_creator.choose_clan": "Choose Your Clan",
+  "clan.tigersshinobiuniverse.clanless": "Clanless",
+  "clan.tigersshinobiuniverse.uchiha": "Uchiha",
+  "clan.tigersshinobiuniverse.hyuga": "Hyuga",
+  "clan.tigersshinobiuniverse.uzumaki": "Uzumaki",
+
   "screen.tigersshinobiuniverse.shinobi_stats": "Shinobi Stats"
 }

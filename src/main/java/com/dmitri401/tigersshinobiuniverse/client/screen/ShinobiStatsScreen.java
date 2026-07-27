@@ -1,5 +1,7 @@
 package com.dmitri401.tigersshinobiuniverse.client.screen;
 
+import com.dmitri401.tigersshinobiuniverse.client.data.ClientShinobiStats;
+import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -43,7 +45,7 @@ public final class ShinobiStatsScreen extends Screen {
             int mouseY,
             float partialTick
     ) {
-        // Prevent the normal blurred background.
+        // Intentionally empty so Minecraft does not blur the world.
     }
 
     @Override
@@ -53,6 +55,8 @@ public final class ShinobiStatsScreen extends Screen {
             int mouseY,
             float partialTick
     ) {
+        SyncStatsPayload stats = ClientShinobiStats.get();
+
         int centerX = this.width / 2;
         int startY = this.height / 2 - 90;
 
@@ -60,6 +64,9 @@ public final class ShinobiStatsScreen extends Screen {
         int panelTop = startY - 15;
         int panelRight = centerX + 110;
         int panelBottom = startY + 140;
+
+        int textX = centerX - 80;
+        int textColor = 0xFFFFFF;
 
         graphics.fill(
                 panelLeft,
@@ -74,55 +81,90 @@ public final class ShinobiStatsScreen extends Screen {
                 this.title,
                 centerX,
                 startY,
-                0xFFFFFF
+                textColor
         );
 
         graphics.drawString(
                 this.font,
-                "Level: 1",
-                centerX - 80,
-                startY + 30,
-                0xFFFFFF
+                "Level: " + stats.level(),
+                textX,
+                startY + 25,
+                textColor
         );
 
         graphics.drawString(
                 this.font,
-                "Chakra: 100 / 100",
-                centerX - 80,
-                startY + 45,
-                0xFFFFFF
+                "Experience: " + stats.ninjaExperience(),
+                textX,
+                startY + 38,
+                textColor
         );
 
         graphics.drawString(
                 this.font,
-                "Chakra Control: 1",
-                centerX - 80,
-                startY + 60,
-                0xFFFFFF
+                "Chakra: "
+                        + stats.chakra()
+                        + " / "
+                        + stats.maxChakra(),
+                textX,
+                startY + 51,
+                textColor
         );
 
         graphics.drawString(
                 this.font,
-                "Ninjutsu: 1",
-                centerX - 80,
-                startY + 75,
-                0xFFFFFF
+                "Ninjutsu: " + stats.ninjutsu(),
+                textX,
+                startY + 64,
+                textColor
         );
 
         graphics.drawString(
                 this.font,
-                "Taijutsu: 1",
-                centerX - 80,
+                "Taijutsu: " + stats.taijutsu(),
+                textX,
+                startY + 77,
+                textColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Genjutsu: " + stats.genjutsu(),
+                textX,
                 startY + 90,
-                0xFFFFFF
+                textColor
         );
 
         graphics.drawString(
                 this.font,
-                "Genjutsu: 1",
-                centerX - 80,
-                startY + 105,
-                0xFFFFFF
+                "Strength: " + stats.strength(),
+                textX,
+                startY + 103,
+                textColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Agility: " + stats.agility(),
+                centerX + 10,
+                startY + 64,
+                textColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Vitality: " + stats.vitality(),
+                centerX + 10,
+                startY + 77,
+                textColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Stat Points: " + stats.statPoints(),
+                centerX + 10,
+                startY + 90,
+                textColor
         );
 
         super.render(

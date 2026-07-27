@@ -8,6 +8,11 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import com.dmitri401.tigersshinobiuniverse.client.screen.ShinobiStatsScreen;
+import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
+import net.neoforged.neoforge.network.PacketDistributor;
+import com.dmitri401.tigersshinobiuniverse.client.screen.ShinobiScreenRouter;
+import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(
         modid = TigersShinobiUniverse.MOD_ID,
@@ -39,7 +44,11 @@ public final class ClientKeyEvents {
         }
 
         while (ModKeyMappings.MENU.consumeClick()) {
-            minecraft.setScreen(new ShinobiStatsScreen());
+            ShinobiScreenRouter.requestMenuOpen();
+
+            PacketDistributor.sendToServer(
+                    new RequestStatsPayload()
+            );
         }
     }
 
