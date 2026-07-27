@@ -35,6 +35,7 @@ public class TigersShinobiUniverseClient {
 
         // Registers the key mappings on the client mod event bus.
         modEventBus.addListener(this::registerKeyMappings);
+
     }
 
     private void registerKeyMappings(

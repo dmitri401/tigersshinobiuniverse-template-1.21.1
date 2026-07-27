@@ -1,12 +1,14 @@
 package com.dmitri401.tigersshinobiuniverse.network;
 
-import com.dmitri401.tigersshinobiuniverse.client.network.ClientPayloadHandlers;
+import com.dmitri401.tigersshinobiuniverse.client.network.ClientStatsSyncBridge;
 import com.dmitri401.tigersshinobiuniverse.network.payload.CompleteCharacterCreationPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.IncreaseStatPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
 import com.dmitri401.tigersshinobiuniverse.player.ShinobiStatService;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
@@ -24,7 +26,7 @@ public final class ModNetworking {
         registrar.playToClient(
                 SyncStatsPayload.TYPE,
                 SyncStatsPayload.STREAM_CODEC,
-                ClientPayloadHandlers::handleStatsSync
+                ModNetworking::handleStatsSync
         );
 
         registrar.playToServer(
@@ -46,8 +48,20 @@ public final class ModNetworking {
         );
     }
 
+    private static void handleStatsSync(
+            SyncStatsPayload payload,
+            IPayloadContext context
+    ) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            ClientStatsSyncBridge.handle(
+                    payload,
+                    context
+            );
+        }
+    }
+
     private static void handleStatsRequest(
-            RequestStatsPayload payload,
+            RequestStatsPayload ignoredPayload,
             IPayloadContext context
     ) {
         if (context.player() instanceof ServerPlayer serverPlayer) {
