@@ -5,89 +5,129 @@ import com.dmitri401.tigersshinobiuniverse.player.ShinobiStats;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 
 public final class WaterWalkingSkill {
 
-    private static final int CHAKRA_COST = 1;
-    private static final int CHAKRA_INTERVAL = 20;
+    private static final double STANDING_OFFSET = 0.12D;
 
     private WaterWalkingSkill() {
     }
 
-    public static void tick(ServerPlayer player) {
-        ShinobiStats stats = ShinobiStatService.get(player);
+    public static void tick(Player player) {
+        Level level = player.level();
 
-        // Only completed ninja characters may use this.
-        if (!stats.isNinja()) {
-            return;
+        /*
+         * ShinobiStatService.get currently accepts ServerPlayer only,
+         * so ninja validation is performed on the logical server.
+         */
+        if (player instanceof ServerPlayer serverPlayer) {
+            ShinobiStats stats = ShinobiStatService.get(serverPlayer);
+
+            if (!stats.isNinja()) {
+                return;
+            }
+
         }
 
-        // Do not activate while deliberately sneaking.
+        // Sneaking intentionally disables water walking.
         if (player.isShiftKeyDown()) {
             return;
         }
 
-        // The player's feet must be touching the top of water.
-        if (!isAtWaterSurface(player)) {
-            return;
-        }
-
-        // Charge one chakra per second.
-        if (player.tickCount % CHAKRA_INTERVAL == 0) {
-            if (!ShinobiStatService.consumeChakra(
-                    player,
-                    CHAKRA_COST
-            )) {
-                return;
-            }
-        }
-
-        Vec3 movement = player.getDeltaMovement();
-
-        /*
-         * A small upward force counteracts gravity and keeps the
-         * player around the water surface.
-         */
-        double verticalSpeed = movement.y;
-
-        if (verticalSpeed < 0.08D) {
-            verticalSpeed = 0.08D;
-        }
-
-        player.setDeltaMovement(
-                movement.x,
-                verticalSpeed,
-                movement.z
-        );
-
-        player.fallDistance = 0.0F;
-        player.hasImpulse = true;
-    }
-
-    private static boolean isAtWaterSurface(
-            ServerPlayer player
-    ) {
-        BlockPos feetPosition = BlockPos.containing(
+        BlockPos belowFeet = BlockPos.containing(
                 player.getX(),
-                player.getBoundingBox().minY,
+                player.getBoundingBox().minY - 0.05D,
                 player.getZ()
         );
 
-        BlockPos belowFeet = feetPosition.below();
+        // Stop controlling the player as soon as solid land is underneath.
+        if (!level.getBlockState(belowFeet)
+                .getCollisionShape(level, belowFeet)
+                .isEmpty()) {
+            return;
+        }
 
-        boolean feetInWater = player.level()
-                .getFluidState(feetPosition)
-                .is(FluidTags.WATER);
+        WaterSurface waterSurface = findWaterSurface(player, level);
 
-        boolean waterBelow = player.level()
-                .getFluidState(belowFeet)
-                .is(FluidTags.WATER);
+        if (waterSurface == null) {
+            return;
+        }
+
+        double feetY = player.getBoundingBox().minY;
+        double surfaceY = waterSurface.surfaceY();
+
+        // Ignore players who are deep underwater or far above the surface.
+        if (feetY < surfaceY - 0.45D
+                || feetY > surfaceY + 0.45D) {
+            return;
+        }
+
+        Vec3 movement = player.getDeltaMovement();
+        double standingY = surfaceY + STANDING_OFFSET;
 
         /*
-         * This covers the moment the player touches the surface
-         * and the moment their feet enter the upper water block.
+         * Keep the player's feet above the fluid before vanilla movement
+         * applies swimming behavior and water drag.
          */
-        return feetInWater || waterBelow;
+        if (feetY < standingY && movement.y <= 0.0D) {
+            player.setPos(
+                    player.getX(),
+                    standingY,
+                    player.getZ()
+            );
+        }
+
+        /*
+         * Let vanilla treat the water surface like ground so jump input works.
+         * Do not replace positive Y velocity, because that is the jump.
+         */
+        player.setOnGround(true);
+        player.setSwimming(false);
+        player.resetFallDistance();
+
+        if (movement.y < 0.0D) {
+            player.setDeltaMovement(
+                    movement.x,
+                    0.0D,
+                    movement.z
+            );
+        }
+
+        player.hasImpulse = true;
+    }
+
+    private static WaterSurface findWaterSurface(
+            Player player,
+            Level level
+    ) {
+        double feetY = player.getBoundingBox().minY;
+
+        for (int offset = 0; offset >= -1; offset--) {
+            BlockPos position = BlockPos.containing(
+                    player.getX(),
+                    feetY + offset,
+                    player.getZ()
+            );
+
+            FluidState fluid = level.getFluidState(position);
+
+            if (!fluid.is(FluidTags.WATER)) {
+                continue;
+            }
+
+            double surfaceY = position.getY()
+                    + fluid.getHeight(level, position);
+
+            return new WaterSurface(surfaceY);
+        }
+
+        return null;
+    }
+
+    private record WaterSurface(double surfaceY) {
     }
 }
