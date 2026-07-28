@@ -29,6 +29,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import com.dmitri401.tigersshinobiuniverse.attachment.ModAttachments;
 import com.dmitri401.tigersshinobiuniverse.network.ModNetworking;
+import com.dmitri401.tigersshinobiuniverse.event.WaterWalkingEvents;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(TigersShinobiUniverse.MOD_ID)
@@ -68,22 +69,19 @@ public class TigersShinobiUniverse {
             IEventBus modEventBus,
             ModContainer modContainer
     ) {
-        // Common setup
+        BLOCKS.register(modEventBus);
+        ITEMS.register(modEventBus);
+        CREATIVE_MODE_TABS.register(modEventBus);
+
         modEventBus.addListener(this::commonSetup);
 
-        // Persistent player stat attachments
         ModAttachments.ATTACHMENTS.register(modEventBus);
-
-        // Network payload registration
         modEventBus.addListener(ModNetworking::registerPayloads);
 
-        // Gameplay events in this class
         NeoForge.EVENT_BUS.register(this);
-
-        // Creative-tab modification
         modEventBus.addListener(this::addCreative);
+        NeoForge.EVENT_BUS.register(WaterWalkingEvents.class);
 
-        // Common config
         modContainer.registerConfig(
                 ModConfig.Type.COMMON,
                 Config.SPEC
