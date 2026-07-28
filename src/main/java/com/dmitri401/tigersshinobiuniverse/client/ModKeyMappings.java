@@ -22,9 +22,9 @@ public final class ModKeyMappings {
                     "key.categories.tigersshinobiuniverse"
             );
 
-    public static final KeyMapping HAND_SIGN_3 =
+    public static final KeyMapping CHARGE =
             new KeyMapping(
-                    "key.tigersshinobiuniverse.hand_sign_3",
+                    "key.tigersshinobiuniverse.charge",
                     InputConstants.Type.KEYSYM,
                     GLFW.GLFW_KEY_C,
                     "key.categories.tigersshinobiuniverse"

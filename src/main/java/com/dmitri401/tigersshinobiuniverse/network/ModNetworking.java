@@ -2,6 +2,7 @@ package com.dmitri401.tigersshinobiuniverse.network;
 
 import com.dmitri401.tigersshinobiuniverse.client.network.ClientStatsSyncBridge;
 import com.dmitri401.tigersshinobiuniverse.network.payload.CompleteCharacterCreationPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.ChargeChakraPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.IncreaseStatPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
@@ -45,6 +46,12 @@ public final class ModNetworking {
                 CompleteCharacterCreationPayload.TYPE,
                 CompleteCharacterCreationPayload.STREAM_CODEC,
                 ModNetworking::handleCompleteCharacterCreation
+        );
+
+        registrar.playToServer(
+                ChargeChakraPayload.TYPE,
+                ChargeChakraPayload.STREAM_CODEC,
+                ModNetworking::handleChargeChakra
         );
     }
 
@@ -92,4 +99,13 @@ public final class ModNetworking {
             );
         }
     }
+    private static void handleChargeChakra(
+            ChargeChakraPayload ignoredPayload,
+            IPayloadContext context
+    ) {
+        if (context.player() instanceof ServerPlayer serverPlayer) {
+            ShinobiStatService.chargeChakra(serverPlayer);
+        }
+    }
+
 }

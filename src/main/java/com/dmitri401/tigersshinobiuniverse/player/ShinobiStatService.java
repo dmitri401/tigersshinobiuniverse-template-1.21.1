@@ -92,6 +92,31 @@ public final class ShinobiStatService {
         return completed;
     }
 
+
+    public static boolean chargeChakra(ServerPlayer player) {
+        ShinobiStats stats = get(player);
+
+        if (!stats.isNinja()) {
+            return false;
+        }
+
+        /*
+         * The client sends while the key is held. Only restore once
+         * every five ticks to avoid charging multiple times per tick.
+         */
+        if (player.tickCount % 5 != 0) {
+            return false;
+        }
+
+        boolean restored = stats.restoreChakra(1);
+
+        if (restored) {
+            sync(player);
+        }
+
+        return restored;
+    }
+
     public static boolean consumeChakra(
             ServerPlayer player,
             int amount

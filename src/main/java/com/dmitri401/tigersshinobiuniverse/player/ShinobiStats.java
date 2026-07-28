@@ -177,6 +177,16 @@ public final class ShinobiStats implements INBTSerializable<CompoundTag> {
          */
     }
 
+
+    public boolean restoreChakra(int amount) {
+        if (amount <= 0 || chakra >= maxChakra) {
+            return false;
+        }
+
+        chakra = Math.min(maxChakra, chakra + amount);
+        return true;
+    }
+
     public boolean consumeChakra(int amount) {
         if (amount <= 0 || chakra < amount) {
             return false;

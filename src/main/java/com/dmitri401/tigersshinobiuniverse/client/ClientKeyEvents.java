@@ -7,12 +7,10 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import com.dmitri401.tigersshinobiuniverse.client.screen.ShinobiStatsScreen;
 import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.ChargeChakraPayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 import com.dmitri401.tigersshinobiuniverse.client.screen.ShinobiScreenRouter;
-import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(
         modid = TigersShinobiUniverse.MOD_ID,
@@ -39,8 +37,10 @@ public final class ClientKeyEvents {
             showMessage(minecraft, "Hand Sign 2");
         }
 
-        while (ModKeyMappings.HAND_SIGN_3.consumeClick()) {
-            showMessage(minecraft, "Hand Sign 3");
+        if (ModKeyMappings.CHARGE.isDown()) {
+            PacketDistributor.sendToServer(
+                    new ChargeChakraPayload()
+            );
         }
 
         while (ModKeyMappings.MENU.consumeClick()) {
