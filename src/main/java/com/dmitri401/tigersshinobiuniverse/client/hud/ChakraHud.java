@@ -1,8 +1,7 @@
 package com.dmitri401.tigersshinobiuniverse.client.hud;
 
 import com.dmitri401.tigersshinobiuniverse.TigersShinobiUniverse;
-import com.dmitri401.tigersshinobiuniverse.attachment.ModAttachments;
-import com.dmitri401.tigersshinobiuniverse.player.ShinobiStats;
+import com.dmitri401.tigersshinobiuniverse.client.network.ClientStatsSyncBridge;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -64,16 +63,11 @@ public final class ChakraHud {
 
         if (minecraft.player == null
                 || minecraft.level == null
-                || minecraft.options.hideGui
-                || minecraft.screen != null) {
+                || minecraft.options.hideGui) {
             return;
         }
 
-        ShinobiStats stats = minecraft.player.getData(
-                ModAttachments.SHINOBI_STATS
-        );
-
-        if (!stats.isNinja()) {
+        if (!ClientStatsSyncBridge.isNinja()) {
             return;
         }
 
@@ -83,10 +77,10 @@ public final class ChakraHud {
                 minecraft.player.getMaxHealth()
         );
 
-        int chakra = stats.getChakra();
+        int chakra = ClientStatsSyncBridge.getChakra();
         int maxChakra = Math.max(
                 1,
-                stats.getMaxChakra()
+                ClientStatsSyncBridge.getMaxChakra()
         );
 
         if (displayedHealth < 0.0F) {
@@ -125,31 +119,7 @@ public final class ChakraHud {
                 1.0F
         );
 
-        renderCroppedBar(
-                graphics,
-                HEALTH_TEXTURE,
-                HUD_X,
-                HUD_Y,
-                HEALTH_FILL_X,
-                HEALTH_FILL_Y,
-                HEALTH_FILL_WIDTH,
-                HEALTH_FILL_HEIGHT,
-                healthPercent
-        );
-
-        renderCroppedBar(
-                graphics,
-                CHAKRA_TEXTURE,
-                HUD_X,
-                HUD_Y,
-                CHAKRA_FILL_X,
-                CHAKRA_FILL_Y,
-                CHAKRA_FILL_WIDTH,
-                CHAKRA_FILL_HEIGHT,
-                chakraPercent
-        );
-
-        // Draw the decorative frame last so it covers the fill edges.
+        // Draw the frame first.
         graphics.blit(
                 FRAME_TEXTURE,
                 HUD_X,
@@ -162,6 +132,33 @@ public final class ChakraHud {
                 TEXTURE_HEIGHT
         );
 
+// Draw health on top of the frame.
+        renderCroppedBar(
+                graphics,
+                HEALTH_TEXTURE,
+                HUD_X,
+                HUD_Y,
+                HEALTH_FILL_X,
+                HEALTH_FILL_Y,
+                HEALTH_FILL_WIDTH,
+                HEALTH_FILL_HEIGHT,
+                healthPercent
+        );
+
+// Draw chakra on top of the frame.
+        renderCroppedBar(
+                graphics,
+                CHAKRA_TEXTURE,
+                HUD_X,
+                HUD_Y,
+                CHAKRA_FILL_X,
+                CHAKRA_FILL_Y,
+                CHAKRA_FILL_WIDTH,
+                CHAKRA_FILL_HEIGHT,
+                chakraPercent
+        );
+
+// Draw numbers last.
         renderValues(
                 graphics,
                 health,
@@ -236,18 +233,34 @@ public final class ChakraHud {
                         + maxChakra;
 
         int healthTextX =
-                HUD_X + 244
-                        - minecraft.font.width(healthText);
+                HUD_X
+                        + HEALTH_FILL_X
+                        + (HEALTH_FILL_WIDTH
+                        - minecraft.font.width(healthText)) / 2;
+
+        int healthTextY =
+                HUD_Y
+                        + HEALTH_FILL_Y
+                        + (HEALTH_FILL_HEIGHT
+                        - minecraft.font.lineHeight) / 2;
 
         int chakraTextX =
-                HUD_X + 244
-                        - minecraft.font.width(chakraText);
+                HUD_X
+                        + CHAKRA_FILL_X
+                        + (CHAKRA_FILL_WIDTH
+                        - minecraft.font.width(chakraText)) / 2;
+
+        int chakraTextY =
+                HUD_Y
+                        + CHAKRA_FILL_Y
+                        + (CHAKRA_FILL_HEIGHT
+                        - minecraft.font.lineHeight) / 2;
 
         graphics.drawString(
                 minecraft.font,
                 healthText,
                 healthTextX,
-                HUD_Y + 4,
+                healthTextY,
                 0xFFFFFFFF,
                 true
         );
@@ -256,7 +269,7 @@ public final class ChakraHud {
                 minecraft.font,
                 chakraText,
                 chakraTextX,
-                HUD_Y + 20,
+                chakraTextY,
                 0xFFFFFFFF,
                 true
         );

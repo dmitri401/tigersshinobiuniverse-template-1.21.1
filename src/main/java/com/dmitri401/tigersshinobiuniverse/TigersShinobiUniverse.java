@@ -30,6 +30,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import com.dmitri401.tigersshinobiuniverse.attachment.ModAttachments;
 import com.dmitri401.tigersshinobiuniverse.network.ModNetworking;
 import com.dmitri401.tigersshinobiuniverse.event.WaterWalkingEvents;
+import com.dmitri401.tigersshinobiuniverse.player.ChakraRegenEvents;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(TigersShinobiUniverse.MOD_ID)
@@ -81,6 +82,9 @@ public class TigersShinobiUniverse {
         NeoForge.EVENT_BUS.register(this);
         modEventBus.addListener(this::addCreative);
         NeoForge.EVENT_BUS.register(WaterWalkingEvents.class);
+        NeoForge.EVENT_BUS.addListener(
+                ChakraRegenEvents::onPlayerTick
+        );
 
         modContainer.registerConfig(
                 ModConfig.Type.COMMON,
