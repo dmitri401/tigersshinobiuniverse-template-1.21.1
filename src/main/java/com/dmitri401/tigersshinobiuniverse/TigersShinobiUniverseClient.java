@@ -41,6 +41,8 @@ public class TigersShinobiUniverseClient {
         event.register(ModKeyMappings.HAND_SIGN_2);
         event.register(ModKeyMappings.CHARGE);
         event.register(ModKeyMappings.MENU);
+        event.register(ModKeyMappings.WALL_RUN);
+        event.register(ModKeyMappings.ALT);
     }
 
     private void onClientSetup(

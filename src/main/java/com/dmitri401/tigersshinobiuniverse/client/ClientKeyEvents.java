@@ -5,6 +5,9 @@ import com.dmitri401.tigersshinobiuniverse.client.network.ClientStatsSyncBridge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import gravitychanger.api.GravityChangerAPI;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -12,6 +15,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.ChargeChakraPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.NinjaJumpPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.WallRunSelectPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.WallRunResetPayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 import com.dmitri401.tigersshinobiuniverse.client.screen.ShinobiScreenRouter;
 
@@ -22,12 +27,13 @@ import com.dmitri401.tigersshinobiuniverse.client.screen.ShinobiScreenRouter;
 public final class ClientKeyEvents {
 
     private static final double CLIENT_INITIAL_JUMP_VELOCITY = 0.55D;
-    private static final double CLIENT_HELD_BOOST_PER_TICK = 0.035D;
+    private static final double CLIENT_HELD_BOOST_PER_TICK = 0.05D;
     private static final int CLIENT_MAXIMUM_BOOST_TICKS = 10;
 
     private static boolean wasJumpDown;
     private static boolean clientJumpStarted;
     private static int clientBoostTicks;
+    private static boolean wasUseDown;
 
     private ClientKeyEvents() {
     }
@@ -38,6 +44,7 @@ public final class ClientKeyEvents {
 
         if (minecraft.player == null || minecraft.level == null) {
             wasJumpDown = false;
+            wasUseDown = false;
             return;
         }
 
@@ -55,6 +62,36 @@ public final class ClientKeyEvents {
                 minecraft,
                 jumpDown
         );
+
+        /*
+         * Holding the configurable Alt key and pressing Wall Run cancels
+         * wall running. The server remains authoritative over the reset.
+         */
+        while (ModKeyMappings.WALL_RUN.consumeClick()) {
+            if (ModKeyMappings.ALT.isDown()) {
+                PacketDistributor.sendToServer(
+                        new WallRunResetPayload()
+                );
+            }
+        }
+
+        boolean useDown = minecraft.options.keyUse.isDown();
+
+        if (!ModKeyMappings.ALT.isDown()
+                && ModKeyMappings.WALL_RUN.isDown()
+                && useDown
+                && !wasUseDown
+                && minecraft.hitResult instanceof BlockHitResult blockHit
+                && blockHit.getType() == HitResult.Type.BLOCK) {
+            PacketDistributor.sendToServer(
+                    new WallRunSelectPayload(
+                            blockHit.getBlockPos(),
+                            blockHit.getDirection()
+                    )
+            );
+        }
+
+        wasUseDown = useDown;
 
         while (ModKeyMappings.HAND_SIGN_1.consumeClick()) {
             showMessage(minecraft, "Hand Sign 1");
@@ -90,51 +127,40 @@ public final class ClientKeyEvents {
             return;
         }
 
+        Vec3 jumpDirection = Vec3.atLowerCornerOf(
+                GravityChangerAPI.getGravityDirection(
+                        minecraft.player
+                ).getOpposite().getNormal()
+        );
+
         if (minecraft.player.onGround()) {
-            /*
-             * Reset after landing. When jump is held, vanilla starts the
-             * jump and this client-side correction raises it to the ninja
-             * minimum immediately.
-             */
             clientJumpStarted = false;
             clientBoostTicks = 0;
 
             if (jumpDown) {
-                Vec3 movement = minecraft.player.getDeltaMovement();
-
-                minecraft.player.setDeltaMovement(
-                        movement.x,
-                        Math.max(
-                                movement.y,
-                                CLIENT_INITIAL_JUMP_VELOCITY
-                        ),
-                        movement.z
+                applyMinimumJumpVelocity(
+                        minecraft.player,
+                        jumpDirection
                 );
-
                 clientJumpStarted = true;
             }
 
             return;
         }
 
-        /*
-         * The first airborne tick can occur before the grounded branch sees
-         * the vanilla jump, so initialize here as a fallback.
-         */
+        Vec3 worldMovement =
+                GravityChangerAPI.getWorldVelocity(
+                        minecraft.player
+                );
+        double jumpSpeed = worldMovement.dot(jumpDirection);
+
         if (jumpDown
                 && !clientJumpStarted
-                && minecraft.player.getDeltaMovement().y > 0.0D) {
-            Vec3 movement = minecraft.player.getDeltaMovement();
-
-            minecraft.player.setDeltaMovement(
-                    movement.x,
-                    Math.max(
-                            movement.y,
-                            CLIENT_INITIAL_JUMP_VELOCITY
-                    ),
-                    movement.z
+                && jumpSpeed > 0.0D) {
+            applyMinimumJumpVelocity(
+                    minecraft.player,
+                    jumpDirection
             );
-
             clientJumpStarted = true;
         }
 
@@ -144,20 +170,48 @@ public final class ClientKeyEvents {
             return;
         }
 
-        Vec3 movement = minecraft.player.getDeltaMovement();
+        worldMovement = GravityChangerAPI.getWorldVelocity(
+                minecraft.player
+        );
+        jumpSpeed = worldMovement.dot(jumpDirection);
 
-        if (movement.y <= 0.0D) {
+        if (jumpSpeed <= 0.0D) {
             clientJumpStarted = false;
             return;
         }
 
-        minecraft.player.setDeltaMovement(
-                movement.x,
-                movement.y + CLIENT_HELD_BOOST_PER_TICK,
-                movement.z
+        GravityChangerAPI.setWorldVelocity(
+                minecraft.player,
+                worldMovement.add(
+                        jumpDirection.scale(
+                                CLIENT_HELD_BOOST_PER_TICK
+                        )
+                )
         );
 
         clientBoostTicks++;
+    }
+
+    private static void applyMinimumJumpVelocity(
+            net.minecraft.world.entity.player.Player player,
+            Vec3 jumpDirection
+    ) {
+        Vec3 worldMovement =
+                GravityChangerAPI.getWorldVelocity(player);
+        double currentJumpSpeed =
+                worldMovement.dot(jumpDirection);
+        double additionalSpeed = Math.max(
+                0.0D,
+                CLIENT_INITIAL_JUMP_VELOCITY
+                        - currentJumpSpeed
+        );
+
+        GravityChangerAPI.setWorldVelocity(
+                player,
+                worldMovement.add(
+                        jumpDirection.scale(additionalSpeed)
+                )
+        );
     }
 
     private static void showMessage(

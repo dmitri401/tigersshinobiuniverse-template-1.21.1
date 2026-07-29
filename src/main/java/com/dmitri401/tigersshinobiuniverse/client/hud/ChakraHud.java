@@ -222,10 +222,14 @@ public final class ChakraHud {
     ) {
         Minecraft minecraft = Minecraft.getInstance();
 
+        /*
+         * Minecraft stores two health points per heart. Vitality represents
+         * hearts, so the HUD converts both values before displaying them.
+         */
         String healthText =
-                Math.round(health)
+                formatHearts(health / 2.0F)
                         + " / "
-                        + Math.round(maxHealth);
+                        + formatHearts(maxHealth / 2.0F);
 
         String chakraText =
                 chakra
@@ -274,4 +278,19 @@ public final class ChakraHud {
                 true
         );
     }
+
+    private static String formatHearts(float hearts) {
+        float roundedToHalfHeart =
+                Math.round(hearts * 2.0F) / 2.0F;
+
+        if (roundedToHalfHeart
+                == Math.round(roundedToHalfHeart)) {
+            return Integer.toString(
+                    Math.round(roundedToHalfHeart)
+            );
+        }
+
+        return Float.toString(roundedToHalfHeart);
+    }
+
 }

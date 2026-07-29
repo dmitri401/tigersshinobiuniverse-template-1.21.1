@@ -3,6 +3,8 @@ package com.dmitri401.tigersshinobiuniverse.player;
 import com.dmitri401.tigersshinobiuniverse.TigersShinobiUniverse;
 import com.dmitri401.tigersshinobiuniverse.attachment.ModAttachments;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.core.Direction;
+import gravitychanger.api.GravityChangerAPI;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -23,7 +25,7 @@ public final class NinjaJumpService {
      * full hold = roughly 5 blocks
      */
     private static final double INITIAL_VERTICAL_VELOCITY = 0.55D;
-    private static final double HELD_BOOST_PER_TICK = 0.035D;
+    private static final double HELD_BOOST_PER_TICK = 0.05D;
     private static final int MAXIMUM_BOOST_TICKS = 10;
 
     private static final Map<UUID, JumpState> JUMP_STATES =
@@ -78,15 +80,25 @@ public final class NinjaJumpService {
             return;
         }
 
-        Vec3 movement = player.getDeltaMovement();
+        Direction gravityDirection =
+                GravityChangerAPI.getGravityDirection(player);
+        Vec3 jumpDirection = Vec3.atLowerCornerOf(
+                gravityDirection.getOpposite().getNormal()
+        );
+        Vec3 worldMovement =
+                GravityChangerAPI.getWorldVelocity(player);
+        double currentJumpSpeed =
+                worldMovement.dot(jumpDirection);
+        double additionalSpeed = Math.max(
+                0.0D,
+                INITIAL_VERTICAL_VELOCITY - currentJumpSpeed
+        );
 
-        player.setDeltaMovement(
-                movement.x,
-                Math.max(
-                        movement.y,
-                        INITIAL_VERTICAL_VELOCITY
-                ),
-                movement.z
+        GravityChangerAPI.setWorldVelocity(
+                player,
+                worldMovement.add(
+                        jumpDirection.scale(additionalSpeed)
+                )
         );
 
         player.hurtMarked = true;
@@ -159,22 +171,24 @@ public final class NinjaJumpService {
             return;
         }
 
-        Vec3 movement = player.getDeltaMovement();
+        Direction gravityDirection =
+                GravityChangerAPI.getGravityDirection(player);
+        Vec3 jumpDirection = Vec3.atLowerCornerOf(
+                gravityDirection.getOpposite().getNormal()
+        );
+        Vec3 worldMovement =
+                GravityChangerAPI.getWorldVelocity(player);
 
-        if (movement.y <= 0.0D) {
+        if (worldMovement.dot(jumpDirection) <= 0.0D) {
             state.jumpStarted = false;
             return;
         }
 
-        /*
-         * Change only vertical motion and mark the velocity as changed.
-         * hasImpulse synchronizes the new motion without using hurtMarked,
-         * which was causing horizontal slowdown.
-         */
-        player.setDeltaMovement(
-                movement.x,
-                movement.y + HELD_BOOST_PER_TICK,
-                movement.z
+        GravityChangerAPI.setWorldVelocity(
+                player,
+                worldMovement.add(
+                        jumpDirection.scale(HELD_BOOST_PER_TICK)
+                )
         );
 
         player.hasImpulse = true;

@@ -5,10 +5,13 @@ import com.dmitri401.tigersshinobiuniverse.network.payload.CompleteCharacterCrea
 import com.dmitri401.tigersshinobiuniverse.network.payload.ChargeChakraPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.IncreaseStatPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.NinjaJumpPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.WallRunSelectPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.WallRunResetPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
 import com.dmitri401.tigersshinobiuniverse.player.ShinobiStatService;
 import com.dmitri401.tigersshinobiuniverse.player.NinjaJumpService;
+import com.dmitri401.tigersshinobiuniverse.player.WallRunService;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -61,6 +64,18 @@ public final class ModNetworking {
                 NinjaJumpPayload.TYPE,
                 NinjaJumpPayload.STREAM_CODEC,
                 ModNetworking::handleNinjaJump
+        );
+
+        registrar.playToServer(
+                WallRunSelectPayload.TYPE,
+                WallRunSelectPayload.STREAM_CODEC,
+                ModNetworking::handleWallRunSelect
+        );
+
+        registrar.playToServer(
+                WallRunResetPayload.TYPE,
+                WallRunResetPayload.STREAM_CODEC,
+                ModNetworking::handleWallRunReset
         );
     }
 
@@ -127,6 +142,30 @@ public final class ModNetworking {
                     serverPlayer,
                     payload.held()
             );
+        }
+    }
+
+
+    private static void handleWallRunSelect(
+            WallRunSelectPayload payload,
+            IPayloadContext context
+    ) {
+        if (context.player() instanceof ServerPlayer serverPlayer) {
+            WallRunService.selectSurface(
+                    serverPlayer,
+                    payload.blockPos(),
+                    payload.face()
+            );
+        }
+    }
+
+
+    private static void handleWallRunReset(
+            WallRunResetPayload ignoredPayload,
+            IPayloadContext context
+    ) {
+        if (context.player() instanceof ServerPlayer serverPlayer) {
+            WallRunService.reset(serverPlayer);
         }
     }
 

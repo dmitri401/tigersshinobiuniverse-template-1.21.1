@@ -10,33 +10,37 @@ public final class ClientShinobiStats {
     private ClientShinobiStats() {
     }
 
-    private static SyncStatsPayload createDefault() {
-        return new SyncStatsPayload(
-                false,                         // isNinja
-                ShinobiClan.CLANLESS.getId(), // clan ID
-                1,                             // level
-                0,                             // ninja experience
-                100,                           // chakra
-                100,                           // max chakra
-                1,                             // ninjutsu
-                1,                             // taijutsu
-                1,                             // genjutsu
-                1,                             // strength
-                1,                             // agility
-                1,                             // vitality
-                0                              // stat points
-        );
-    }
-
     public static SyncStatsPayload get() {
         return current;
     }
 
     public static void update(SyncStatsPayload payload) {
-        current = payload;
+        if (payload != null) {
+            current = payload;
+        }
     }
 
     public static void reset() {
         current = createDefault();
+    }
+
+    private static SyncStatsPayload createDefault() {
+        return new SyncStatsPayload(
+                false,
+                ShinobiClan.CLANLESS.getId(),
+                1,
+                0,
+                100,
+                100,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                10,
+                0
+        );
     }
 }

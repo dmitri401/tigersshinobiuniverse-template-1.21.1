@@ -8,6 +8,13 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class ShinobiStatService {
 
+    /*
+     * IDs for the two new basic stats. Existing IDs remain compatible:
+     * STRENGTH now increases Defense.
+     */
+    public static final int CHAKRA_STAT_ID = 6;
+    public static final int CHAKRA_CONTROL_STAT_ID = 7;
+
     private ShinobiStatService() {
     }
 
@@ -45,7 +52,7 @@ public final class ShinobiStatService {
                     stats.setGenjutsu(stats.getGenjutsu() + 1);
 
             case IncreaseStatPayload.STRENGTH ->
-                    stats.setStrength(stats.getStrength() + 1);
+                    stats.setDefense(stats.getDefense() + 1);
 
             case IncreaseStatPayload.AGILITY ->
                     stats.setAgility(stats.getAgility() + 1);
@@ -53,12 +60,23 @@ public final class ShinobiStatService {
             case IncreaseStatPayload.VITALITY ->
                     stats.setVitality(stats.getVitality() + 1);
 
+            case CHAKRA_STAT_ID -> {
+                stats.setMaxChakra(stats.getMaxChakra() + 10);
+                stats.setChakra(stats.getChakra() + 10);
+            }
+
+            case CHAKRA_CONTROL_STAT_ID ->
+                    stats.setChakraControl(
+                            stats.getChakraControl() + 1
+                    );
+
             default -> {
                 return false;
             }
         }
 
         stats.setStatPoints(stats.getStatPoints() - 1);
+        BasicStatEffects.apply(player);
         sync(player);
 
         return true;
@@ -86,6 +104,7 @@ public final class ShinobiStatService {
                 stats.completeCharacterCreation(selectedClan);
 
         if (completed) {
+            BasicStatEffects.apply(player);
             sync(player);
         }
 
@@ -104,11 +123,11 @@ public final class ShinobiStatService {
          * The client sends while the key is held. Only restore once
          * every five ticks to avoid charging multiple times per tick.
          */
-        if (player.tickCount % 5 != 0) {
+        if (player.tickCount % 20 != 0) {
             return false;
         }
 
-        boolean restored = stats.restoreChakra(1);
+        boolean restored = stats.restoreChakra(2);
 
         if (restored) {
             sync(player);

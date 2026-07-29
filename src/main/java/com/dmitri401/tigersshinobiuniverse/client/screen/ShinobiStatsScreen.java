@@ -31,7 +31,7 @@ public final class ShinobiStatsScreen extends Screen {
                         button -> this.onClose()
                 ).bounds(
                         this.width / 2 - buttonWidth / 2,
-                        this.height / 2 + 70,
+                        this.height / 2 + 92,
                         buttonWidth,
                         buttonHeight
                 ).build()
@@ -58,15 +58,17 @@ public final class ShinobiStatsScreen extends Screen {
         SyncStatsPayload stats = ClientShinobiStats.get();
 
         int centerX = this.width / 2;
-        int startY = this.height / 2 - 90;
+        int startY = this.height / 2 - 108;
 
-        int panelLeft = centerX - 110;
+        int panelLeft = centerX - 145;
         int panelTop = startY - 15;
-        int panelRight = centerX + 110;
-        int panelBottom = startY + 140;
+        int panelRight = centerX + 145;
+        int panelBottom = startY + 190;
 
-        int textX = centerX - 80;
+        int leftX = centerX - 120;
+        int rightX = centerX + 15;
         int textColor = 0xFFFFFF;
+        int headingColor = 0xFFD36B;
 
         graphics.fill(
                 panelLeft,
@@ -87,16 +89,67 @@ public final class ShinobiStatsScreen extends Screen {
         graphics.drawString(
                 this.font,
                 "Level: " + stats.level(),
-                textX,
-                startY + 25,
+                leftX,
+                startY + 24,
                 textColor
         );
 
         graphics.drawString(
                 this.font,
                 "Experience: " + stats.ninjaExperience(),
-                textX,
-                startY + 38,
+                rightX,
+                startY + 24,
+                textColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Stat Points: " + stats.statPoints(),
+                rightX,
+                startY + 37,
+                textColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Basic Stats",
+                leftX,
+                startY + 52,
+                headingColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Vitality: "
+                        + stats.vitality()
+                        + " hearts",
+                leftX,
+                startY + 68,
+                textColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Defense: " + stats.defense(),
+                leftX,
+                startY + 81,
+                textColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Agility: " + stats.agility(),
+                leftX,
+                startY + 94,
+                textColor
+        );
+
+        graphics.drawString(
+                this.font,
+                "Chakra Control: "
+                        + stats.chakraControl(),
+                leftX,
+                startY + 107,
                 textColor
         );
 
@@ -106,64 +159,40 @@ public final class ShinobiStatsScreen extends Screen {
                         + stats.chakra()
                         + " / "
                         + stats.maxChakra(),
-                textX,
-                startY + 51,
+                leftX,
+                startY + 120,
                 textColor
         );
 
         graphics.drawString(
                 this.font,
+                "Skills",
+                rightX,
+                startY + 52,
+                headingColor
+        );
+
+        graphics.drawString(
+                this.font,
                 "Ninjutsu: " + stats.ninjutsu(),
-                textX,
-                startY + 64,
+                rightX,
+                startY + 68,
                 textColor
         );
 
         graphics.drawString(
                 this.font,
                 "Taijutsu: " + stats.taijutsu(),
-                textX,
-                startY + 77,
+                rightX,
+                startY + 81,
                 textColor
         );
 
         graphics.drawString(
                 this.font,
                 "Genjutsu: " + stats.genjutsu(),
-                textX,
-                startY + 90,
-                textColor
-        );
-
-        graphics.drawString(
-                this.font,
-                "Strength: " + stats.strength(),
-                textX,
-                startY + 103,
-                textColor
-        );
-
-        graphics.drawString(
-                this.font,
-                "Agility: " + stats.agility(),
-                centerX + 10,
-                startY + 64,
-                textColor
-        );
-
-        graphics.drawString(
-                this.font,
-                "Vitality: " + stats.vitality(),
-                centerX + 10,
-                startY + 77,
-                textColor
-        );
-
-        graphics.drawString(
-                this.font,
-                "Stat Points: " + stats.statPoints(),
-                centerX + 10,
-                startY + 90,
+                rightX,
+                startY + 94,
                 textColor
         );
 

@@ -15,10 +15,12 @@ public record SyncStatsPayload(
         int ninjaExperience,
         int chakra,
         int maxChakra,
+        int chakraControl,
         int ninjutsu,
         int taijutsu,
         int genjutsu,
         int strength,
+        int defense,
         int agility,
         int vitality,
         int statPoints
@@ -44,15 +46,16 @@ public record SyncStatsPayload(
     ) {
         ByteBufCodecs.BOOL.encode(buffer, payload.isNinja());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.clanId());
-
         ByteBufCodecs.VAR_INT.encode(buffer, payload.level());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.ninjaExperience());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.chakra());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.maxChakra());
+        ByteBufCodecs.VAR_INT.encode(buffer, payload.chakraControl());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.ninjutsu());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.taijutsu());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.genjutsu());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.strength());
+        ByteBufCodecs.VAR_INT.encode(buffer, payload.defense());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.agility());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.vitality());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.statPoints());
@@ -62,7 +65,8 @@ public record SyncStatsPayload(
         return new SyncStatsPayload(
                 ByteBufCodecs.BOOL.decode(buffer),
                 ByteBufCodecs.VAR_INT.decode(buffer),
-
+                ByteBufCodecs.VAR_INT.decode(buffer),
+                ByteBufCodecs.VAR_INT.decode(buffer),
                 ByteBufCodecs.VAR_INT.decode(buffer),
                 ByteBufCodecs.VAR_INT.decode(buffer),
                 ByteBufCodecs.VAR_INT.decode(buffer),
@@ -85,10 +89,12 @@ public record SyncStatsPayload(
                 stats.getNinjaExperience(),
                 stats.getChakra(),
                 stats.getMaxChakra(),
+                stats.getChakraControl(),
                 stats.getNinjutsu(),
                 stats.getTaijutsu(),
                 stats.getGenjutsu(),
-                stats.getStrength(),
+                stats.getDefense(),
+                stats.getDefense(),
                 stats.getAgility(),
                 stats.getVitality(),
                 stats.getStatPoints()

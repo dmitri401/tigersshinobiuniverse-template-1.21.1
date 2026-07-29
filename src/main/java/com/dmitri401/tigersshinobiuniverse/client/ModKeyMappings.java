@@ -39,6 +39,24 @@ public final class ModKeyMappings {
             );
 
 
+
+
+    public static final KeyMapping ALT =
+            new KeyMapping(
+                    "key.tigersshinobiuniverse.alt",
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_LEFT_ALT,
+                    "key.categories.tigersshinobiuniverse"
+            );
+
+    public static final KeyMapping WALL_RUN =
+            new KeyMapping(
+                    "key.tigersshinobiuniverse.wall_run",
+                    InputConstants.Type.KEYSYM,
+                    InputConstants.UNKNOWN.getValue(),
+                    "key.categories.tigersshinobiuniverse"
+            );
+
     private ModKeyMappings() {
     }
 }
