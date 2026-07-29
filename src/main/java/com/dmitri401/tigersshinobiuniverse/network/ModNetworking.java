@@ -4,9 +4,11 @@ import com.dmitri401.tigersshinobiuniverse.client.network.ClientStatsSyncBridge;
 import com.dmitri401.tigersshinobiuniverse.network.payload.CompleteCharacterCreationPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.ChargeChakraPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.IncreaseStatPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.NinjaJumpPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
 import com.dmitri401.tigersshinobiuniverse.player.ShinobiStatService;
+import com.dmitri401.tigersshinobiuniverse.player.NinjaJumpService;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -52,6 +54,13 @@ public final class ModNetworking {
                 ChargeChakraPayload.TYPE,
                 ChargeChakraPayload.STREAM_CODEC,
                 ModNetworking::handleChargeChakra
+        );
+
+
+        registrar.playToServer(
+                NinjaJumpPayload.TYPE,
+                NinjaJumpPayload.STREAM_CODEC,
+                ModNetworking::handleNinjaJump
         );
     }
 
@@ -105,6 +114,19 @@ public final class ModNetworking {
     ) {
         if (context.player() instanceof ServerPlayer serverPlayer) {
             ShinobiStatService.chargeChakra(serverPlayer);
+        }
+    }
+
+
+    private static void handleNinjaJump(
+            NinjaJumpPayload payload,
+            IPayloadContext context
+    ) {
+        if (context.player() instanceof ServerPlayer serverPlayer) {
+            NinjaJumpService.setJumpHeld(
+                    serverPlayer,
+                    payload.held()
+            );
         }
     }
 
