@@ -1,12 +1,11 @@
 package com.dmitri401.tigersshinobiuniverse;
 
 import com.dmitri401.tigersshinobiuniverse.client.ModKeyMappings;
+import com.dmitri401.tigersshinobiuniverse.client.hud.ModGuiLayers;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
@@ -16,10 +15,6 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 @Mod(
         value = TigersShinobiUniverse.MOD_ID,
         dist = Dist.CLIENT
-)
-@EventBusSubscriber(
-        modid = TigersShinobiUniverse.MOD_ID,
-        value = Dist.CLIENT
 )
 public class TigersShinobiUniverseClient {
 
@@ -33,9 +28,10 @@ public class TigersShinobiUniverseClient {
                 ConfigurationScreen::new
         );
 
-        // Registers the key mappings on the client mod event bus.
+        // Client mod-bus registrations.
         modEventBus.addListener(this::registerKeyMappings);
-
+        modEventBus.addListener(ModGuiLayers::registerGuiLayers);
+        modEventBus.addListener(this::onClientSetup);
     }
 
     private void registerKeyMappings(
@@ -47,8 +43,9 @@ public class TigersShinobiUniverseClient {
         event.register(ModKeyMappings.MENU);
     }
 
-    @SubscribeEvent
-    static void onClientSetup(FMLClientSetupEvent event) {
+    private void onClientSetup(
+            FMLClientSetupEvent event
+    ) {
         TigersShinobiUniverse.LOGGER.info(
                 "Tiger's Shinobi Universe client setup started"
         );
