@@ -40,6 +40,7 @@ public final class WallRunService {
         );
 
         if (!stats.isNinja()
+                || player.isUnderWater()
                 || !GravityChangerAPI.canChangeGravity(player)) {
             return;
         }
@@ -62,8 +63,17 @@ public final class WallRunService {
         }
 
         Direction gravityDirection = face.getOpposite();
-        Vec3 worldVelocity =
-                GravityChangerAPI.getWorldVelocity(player);
+        Direction previousGravityDirection =
+                GravityChangerAPI.getGravityDirection(player);
+
+        /*
+         * Do not carry a fall from the previous gravity direction into the
+         * wall-running direction. Upward and sideways motion is preserved.
+         */
+        Vec3 worldVelocity = removeFallingVelocity(
+                GravityChangerAPI.getWorldVelocity(player),
+                previousGravityDirection
+        );
 
         GravityChangerAPI.setBaseGravityDirection(
                 player,
@@ -83,6 +93,7 @@ public final class WallRunService {
                 )
         );
 
+        saveWallRun(player, gravityDirection);
         player.resetFallDistance();
     }
 
@@ -92,15 +103,28 @@ public final class WallRunService {
 
     public static void reset(ServerPlayer player) {
         ACTIVE.remove(player.getUUID());
+        clearSavedWallRun(player);
 
         if (GravityChangerAPI.canChangeGravity(player)) {
             Vec3 worldVelocity =
                     GravityChangerAPI.getWorldVelocity(player);
 
             GravityChangerAPI.resetGravity(player);
+
+            Direction restoredGravityDirection =
+                    GravityChangerAPI.getGravityDirection(player);
+
+            /*
+             * A velocity already pointing toward the restored gravity makes
+             * the player dip immediately during the handoff. Remove only that
+             * falling component; wall jumps and sideways movement remain.
+             */
             GravityChangerAPI.setWorldVelocity(
                     player,
-                    worldVelocity
+                    removeFallingVelocity(
+                            worldVelocity,
+                            restoredGravityDirection
+                    )
             );
         }
 
@@ -108,7 +132,23 @@ public final class WallRunService {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
+    public static void onPlayerTickPre(PlayerTickEvent.Pre event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+
+        /*
+         * ACTIVE is runtime-only and disappears when the player logs out.
+         * Restore the serialized gravity before vanilla movement runs so the
+         * player never receives a normal-gravity falling tick first.
+         */
+        if (!ACTIVE.containsKey(player.getUUID())) {
+            restoreSavedWallRun(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTickPost(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
@@ -126,7 +166,8 @@ public final class WallRunService {
         if (!stats.isNinja()
                 || player.getAbilities().flying
                 || player.isPassenger()
-                || player.isFallFlying()) {
+                || player.isFallFlying()
+                || player.isUnderWater()) {
             reset(player);
             return;
         }
@@ -184,6 +225,7 @@ public final class WallRunService {
 
             if (gravityRelativeFallDistance > MAX_FALL_DISTANCE) {
                 reset(player);
+                return;
             }
         }
     }
@@ -210,9 +252,139 @@ public final class WallRunService {
     public static void onLogout(
             PlayerEvent.PlayerLoggedOutEvent event
     ) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            ACTIVE.remove(player.getUUID());
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
         }
+
+        /*
+         * Keep the serialized attachment active, but remove the runtime entry.
+         * It will be reconstructed on the first server tick after login.
+         */
+        if (ACTIVE.containsKey(player.getUUID())) {
+            Direction gravityDirection =
+                    GravityChangerAPI.getGravityDirection(player);
+
+            saveWallRun(player, gravityDirection);
+        }
+
+        ACTIVE.remove(player.getUUID());
+    }
+
+    private static void saveWallRun(
+            ServerPlayer player,
+            Direction gravityDirection
+    ) {
+        WallRunData data = player.getData(
+                ModAttachments.WALL_RUN_DATA
+        );
+
+        data.activate(gravityDirection);
+    }
+
+    private static void clearSavedWallRun(
+            ServerPlayer player
+    ) {
+        player.getData(
+                ModAttachments.WALL_RUN_DATA
+        ).clear();
+    }
+
+    private static boolean restoreSavedWallRun(
+            ServerPlayer player
+    ) {
+        WallRunData data = player.getData(
+                ModAttachments.WALL_RUN_DATA
+        );
+
+        if (!data.isActive()) {
+            return false;
+        }
+
+        Direction gravityDirection =
+                data.getGravityDirection();
+
+        ShinobiStats stats = player.getData(
+                ModAttachments.SHINOBI_STATS
+        );
+
+        /*
+         * These are the same states that normally cancel wall running.
+         * Invalid saved data is cleared rather than restored.
+         */
+        if (!stats.isNinja()
+                || gravityDirection == Direction.DOWN
+                || player.getAbilities().flying
+                || player.isPassenger()
+                || player.isFallFlying()
+                || player.isUnderWater()) {
+            reset(player);
+            return false;
+        }
+
+        /*
+         * Gravity Changer may not be ready on the first login tick. Leave the
+         * attachment intact and try again on the next tick in that case.
+         */
+        if (!GravityChangerAPI.canChangeGravity(player)) {
+            return false;
+        }
+
+        Direction previousGravityDirection =
+                GravityChangerAPI.getGravityDirection(player);
+
+        Vec3 worldVelocity = removeFallingVelocity(
+                GravityChangerAPI.getWorldVelocity(player),
+                previousGravityDirection
+        );
+
+        GravityChangerAPI.setBaseGravityDirection(
+                player,
+                gravityDirection
+        );
+
+        GravityChangerAPI.setWorldVelocity(
+                player,
+                worldVelocity
+        );
+
+        /*
+         * Rebuild the runtime reference coordinates from the player's loaded
+         * position. This avoids restoring stale coordinates from before logout.
+         */
+        ACTIVE.put(
+                player.getUUID(),
+                new WallRunState(
+                        contactCoordinate(player, gravityDirection),
+                        gravityAxisPosition(player, gravityDirection)
+                )
+        );
+
+        player.resetFallDistance();
+        return true;
+    }
+
+    /**
+     * Removes only velocity that is moving in the gravity direction.
+     * Negative movement along the gravity vector is upward and is preserved.
+     */
+    private static Vec3 removeFallingVelocity(
+            Vec3 worldVelocity,
+            Direction gravityDirection
+    ) {
+        Vec3 gravityVector = Vec3.atLowerCornerOf(
+                gravityDirection.getNormal()
+        );
+
+        double velocityAlongGravity =
+                worldVelocity.dot(gravityVector);
+
+        if (velocityAlongGravity <= 0.0D) {
+            return worldVelocity;
+        }
+
+        return worldVelocity.subtract(
+                gravityVector.scale(velocityAlongGravity)
+        );
     }
 
     /*

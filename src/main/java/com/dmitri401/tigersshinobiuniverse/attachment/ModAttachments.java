@@ -2,6 +2,7 @@ package com.dmitri401.tigersshinobiuniverse.attachment;
 
 import com.dmitri401.tigersshinobiuniverse.TigersShinobiUniverse;
 import com.dmitri401.tigersshinobiuniverse.player.ShinobiStats;
+import com.dmitri401.tigersshinobiuniverse.player.WallRunData;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
@@ -22,6 +23,18 @@ public final class ModAttachments {
                     () -> AttachmentType
                             .serializable(ShinobiStats::new)
                             .copyOnDeath()
+                            .build()
+            );
+
+    /*
+     * Serialized with the player so active wall-running gravity survives
+     * logout and login. It is intentionally not copied on death.
+     */
+    public static final Supplier<AttachmentType<WallRunData>> WALL_RUN_DATA =
+            ATTACHMENTS.register(
+                    "wall_run_data",
+                    () -> AttachmentType
+                            .serializable(WallRunData::new)
                             .build()
             );
 

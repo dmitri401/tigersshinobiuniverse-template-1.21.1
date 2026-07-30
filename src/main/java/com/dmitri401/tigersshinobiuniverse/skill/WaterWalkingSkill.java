@@ -2,7 +2,10 @@ package com.dmitri401.tigersshinobiuniverse.skill;
 
 import com.dmitri401.tigersshinobiuniverse.player.ShinobiStatService;
 import com.dmitri401.tigersshinobiuniverse.player.ShinobiStats;
+import com.dmitri401.tigersshinobiuniverse.player.WallRunService;
+import gravitychanger.api.GravityChangerAPI;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.player.Player;
@@ -12,13 +15,37 @@ import net.minecraft.world.phys.Vec3;
 
 public final class WaterWalkingSkill {
 
-    private static final double STANDING_OFFSET = 0.12D;
+    private static final double STANDING_OFFSET = 0.02D;
+
+    /*
+     * About a 1.5-block jump under normal Minecraft gravity.
+     * Vanilla jump velocity is approximately 0.42D.
+     */
+    private static final double WATER_JUMP_VELOCITY = 0.465D;
 
     private WaterWalkingSkill() {
     }
 
     public static void tick(Player player) {
         Level level = player.level();
+
+        /*
+         * Wall running has priority over water walking. The gravity-direction
+         * check runs on both logical sides, preventing the client from applying
+         * water support while attached to a wall or ceiling.
+         */
+        if (GravityChangerAPI.getGravityDirection(player) != Direction.DOWN) {
+            return;
+        }
+
+        /*
+         * Keep the explicit server-side state check as well. This covers the
+         * brief transition tick before the changed gravity reaches the client.
+         */
+        if (player instanceof ServerPlayer serverPlayer
+                && WallRunService.isWallRunning(serverPlayer)) {
+            return;
+        }
 
         /*
          * ShinobiStatService.get currently accepts ServerPlayer only,
@@ -70,10 +97,21 @@ public final class WaterWalkingSkill {
         double standingY = surfaceY + STANDING_OFFSET;
 
         /*
-         * Keep the player's feet above the fluid before vanilla movement
-         * applies swimming behavior and water drag.
+         * Do not interfere with a real jump that is moving upward.
+         * Water walking takes control again when the player descends.
          */
-        if (feetY < standingY && movement.y <= 0.0D) {
+        if (movement.y > 0.0D) {
+            player.setOnGround(false);
+            return;
+        }
+
+        /*
+         * Always land at one exact height. The old behavior only moved players
+         * upward when they were below standingY, then cancelled downward
+         * velocity even when they were as much as 0.45 blocks above the water.
+         * That could leave the player suspended above the surface.
+         */
+        if (Math.abs(feetY - standingY) > 0.001D) {
             player.setPos(
                     player.getX(),
                     standingY,
@@ -81,23 +119,90 @@ public final class WaterWalkingSkill {
             );
         }
 
-        /*
-         * Let vanilla treat the water surface like ground so jump input works.
-         * Do not replace positive Y velocity, because that is the jump.
-         */
         player.setOnGround(true);
         player.setSwimming(false);
         player.resetFallDistance();
 
-        if (movement.y < 0.0D) {
-            player.setDeltaMovement(
-                    movement.x,
-                    0.0D,
-                    movement.z
-            );
-        }
+        player.setDeltaMovement(
+                movement.x,
+                0.0D,
+                movement.z
+        );
 
         player.hasImpulse = true;
+    }
+
+    public static void handleWaterJump(Player player) {
+        /*
+         * Water walking only operates with normal downward gravity.
+         * Wall-running jumps are handled by their own movement system.
+         */
+        if (GravityChangerAPI.getGravityDirection(player) != Direction.DOWN) {
+            return;
+        }
+
+        if (player instanceof ServerPlayer serverPlayer) {
+            if (WallRunService.isWallRunning(serverPlayer)) {
+                return;
+            }
+
+            ShinobiStats stats = ShinobiStatService.get(serverPlayer);
+
+            if (!stats.isNinja()) {
+                return;
+            }
+        }
+
+        if (player.isShiftKeyDown() || player.isUnderWater()) {
+            return;
+        }
+
+        Level level = player.level();
+
+        BlockPos belowFeet = BlockPos.containing(
+                player.getX(),
+                player.getBoundingBox().minY - 0.05D,
+                player.getZ()
+        );
+
+        if (!level.getBlockState(belowFeet)
+                .getCollisionShape(level, belowFeet)
+                .isEmpty()) {
+            return;
+        }
+
+        WaterSurface waterSurface = findWaterSurface(player, level);
+
+        if (waterSurface == null) {
+            return;
+        }
+
+        double feetY = player.getBoundingBox().minY;
+        double expectedStandingY =
+                waterSurface.surfaceY() + STANDING_OFFSET;
+
+        /*
+         * Only boost jumps that begin from the actual water-walking surface.
+         * This prevents nearby water from modifying jumps made from land.
+         */
+        if (Math.abs(feetY - expectedStandingY) > 0.12D) {
+            return;
+        }
+
+        Vec3 movement = player.getDeltaMovement();
+
+        player.setDeltaMovement(
+                movement.x,
+                Math.max(movement.y, WATER_JUMP_VELOCITY),
+                movement.z
+        );
+
+        player.setOnGround(false);
+        player.hasImpulse = true;
+
+        if (player instanceof ServerPlayer) {
+            player.hurtMarked = true;
+        }
     }
 
     private static WaterSurface findWaterSurface(
