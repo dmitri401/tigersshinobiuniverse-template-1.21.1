@@ -1,6 +1,7 @@
 package com.dmitri401.tigersshinobiuniverse.client.screen;
 
 import com.dmitri401.tigersshinobiuniverse.client.data.ClientShinobiStats;
+import com.dmitri401.tigersshinobiuniverse.jutsu.JutsuSlots;
 import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -14,6 +15,8 @@ public final class ShinobiStatsScreen extends Screen {
                     "screen.tigersshinobiuniverse.shinobi_stats"
             );
 
+    private ScreenTab activeTab = ScreenTab.STATS;
+
     public ShinobiStatsScreen() {
         super(TITLE);
     }
@@ -22,20 +25,48 @@ public final class ShinobiStatsScreen extends Screen {
     protected void init() {
         super.init();
 
-        int buttonWidth = 120;
-        int buttonHeight = 20;
+        int centerX = this.width / 2;
+        int tabY = this.height / 2 - 123;
+
+        this.addRenderableWidget(
+                Button.builder(
+                        Component.literal("Stats"),
+                        button -> switchTab(ScreenTab.STATS)
+                ).bounds(
+                        centerX - 145,
+                        tabY,
+                        70,
+                        20
+                ).build()
+        );
+
+        this.addRenderableWidget(
+                Button.builder(
+                        Component.literal("Jutsu"),
+                        button -> switchTab(ScreenTab.JUTSU)
+                ).bounds(
+                        centerX - 70,
+                        tabY,
+                        70,
+                        20
+                ).build()
+        );
 
         this.addRenderableWidget(
                 Button.builder(
                         Component.literal("Close"),
                         button -> this.onClose()
                 ).bounds(
-                        this.width / 2 - buttonWidth / 2,
+                        centerX - 60,
                         this.height / 2 + 92,
-                        buttonWidth,
-                        buttonHeight
+                        120,
+                        20
                 ).build()
         );
+    }
+
+    private void switchTab(ScreenTab newTab) {
+        activeTab = newTab;
     }
 
     @Override
@@ -55,20 +86,13 @@ public final class ShinobiStatsScreen extends Screen {
             int mouseY,
             float partialTick
     ) {
-        SyncStatsPayload stats = ClientShinobiStats.get();
-
         int centerX = this.width / 2;
-        int startY = this.height / 2 - 108;
+        int startY = this.height / 2 - 98;
 
         int panelLeft = centerX - 145;
         int panelTop = startY - 15;
         int panelRight = centerX + 145;
-        int panelBottom = startY + 190;
-
-        int leftX = centerX - 120;
-        int rightX = centerX + 15;
-        int textColor = 0xFFFFFF;
-        int headingColor = 0xFFD36B;
+        int panelBottom = startY + 180;
 
         graphics.fill(
                 panelLeft,
@@ -80,11 +104,39 @@ public final class ShinobiStatsScreen extends Screen {
 
         graphics.drawCenteredString(
                 this.font,
-                this.title,
+                activeTab == ScreenTab.STATS
+                        ? this.title
+                        : Component.literal("Jutsu Slots"),
                 centerX,
                 startY,
-                textColor
+                0xFFFFFF
         );
+
+        if (activeTab == ScreenTab.STATS) {
+            renderStatsTab(graphics, centerX, startY);
+        } else {
+            renderJutsuTab(graphics, centerX, startY);
+        }
+
+        super.render(
+                graphics,
+                mouseX,
+                mouseY,
+                partialTick
+        );
+    }
+
+    private void renderStatsTab(
+            GuiGraphics graphics,
+            int centerX,
+            int startY
+    ) {
+        SyncStatsPayload stats = ClientShinobiStats.get();
+
+        int leftX = centerX - 120;
+        int rightX = centerX + 15;
+        int textColor = 0xFFFFFF;
+        int headingColor = 0xFFD36B;
 
         graphics.drawString(
                 this.font,
@@ -120,9 +172,7 @@ public final class ShinobiStatsScreen extends Screen {
 
         graphics.drawString(
                 this.font,
-                "Vitality: "
-                        + stats.vitality()
-                        + " hearts",
+                "Vitality: " + stats.vitality() + " hearts",
                 leftX,
                 startY + 68,
                 textColor
@@ -146,8 +196,7 @@ public final class ShinobiStatsScreen extends Screen {
 
         graphics.drawString(
                 this.font,
-                "Chakra Control: "
-                        + stats.chakraControl(),
+                "Chakra Control: " + stats.chakraControl(),
                 leftX,
                 startY + 107,
                 textColor
@@ -195,17 +244,79 @@ public final class ShinobiStatsScreen extends Screen {
                 startY + 94,
                 textColor
         );
+    }
 
-        super.render(
-                graphics,
-                mouseX,
-                mouseY,
-                partialTick
+    private void renderJutsuTab(
+            GuiGraphics graphics,
+            int centerX,
+            int startY
+    ) {
+        int slotWidth = 122;
+        int slotHeight = 29;
+        int horizontalGap = 12;
+        int verticalGap = 7;
+
+        int gridLeft =
+                centerX - slotWidth - horizontalGap / 2;
+
+        int gridTop = startY + 25;
+
+        for (int slot = 1;
+             slot <= JutsuSlots.SLOT_COUNT;
+             slot++) {
+            int index = slot - 1;
+            int column = index % 2;
+            int row = index / 2;
+
+            int left = gridLeft
+                    + column * (slotWidth + horizontalGap);
+
+            int top = gridTop
+                    + row * (slotHeight + verticalGap);
+
+            graphics.fill(
+                    left,
+                    top,
+                    left + slotWidth,
+                    top + slotHeight,
+                    0xAA202020
+            );
+
+            graphics.drawString(
+                    this.font,
+                    "Slot " + slot
+                            + ": "
+                            + JutsuSlots.getAssignedJutsuName(slot),
+                    left + 6,
+                    top + 5,
+                    0xFFFFFF
+            );
+
+            graphics.drawString(
+                    this.font,
+                    JutsuSlots.getSequenceText(slot),
+                    left + 6,
+                    top + 17,
+                    0xA8D8FF
+            );
+        }
+
+        graphics.drawCenteredString(
+                this.font,
+                "Enter three signs using Hand Sign 1 and Hand Sign 2",
+                centerX,
+                startY + 174,
+                0xB0B0B0
         );
     }
 
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private enum ScreenTab {
+        STATS,
+        JUTSU
     }
 }

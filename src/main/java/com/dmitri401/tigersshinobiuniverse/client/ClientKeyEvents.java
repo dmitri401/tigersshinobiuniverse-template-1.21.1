@@ -2,6 +2,7 @@ package com.dmitri401.tigersshinobiuniverse.client;
 
 import com.dmitri401.tigersshinobiuniverse.TigersShinobiUniverse;
 import com.dmitri401.tigersshinobiuniverse.client.network.ClientStatsSyncBridge;
+import com.dmitri401.tigersshinobiuniverse.config.JutsuConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
@@ -17,6 +18,7 @@ import com.dmitri401.tigersshinobiuniverse.network.payload.ChargeChakraPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.NinjaJumpPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.WallRunSelectPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.WallRunResetPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.HandSignInputPayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 import com.dmitri401.tigersshinobiuniverse.client.screen.ShinobiScreenRouter;
 
@@ -34,6 +36,10 @@ public final class ClientKeyEvents {
     private static boolean clientJumpStarted;
     private static int clientBoostTicks;
     private static boolean wasUseDown;
+    private static int chargeRequestCooldown;
+    private static final int[] CLIENT_HAND_SIGN_CHAIN = new int[3];
+    private static int clientHandSignCount;
+    private static int lastHandSignTick = Integer.MIN_VALUE;
 
     private ClientKeyEvents() {
     }
@@ -45,6 +51,7 @@ public final class ClientKeyEvents {
         if (minecraft.player == null || minecraft.level == null) {
             wasJumpDown = false;
             wasUseDown = false;
+            chargeRequestCooldown = 0;
             return;
         }
 
@@ -94,17 +101,28 @@ public final class ClientKeyEvents {
         wasUseDown = useDown;
 
         while (ModKeyMappings.HAND_SIGN_1.consumeClick()) {
-            showMessage(minecraft, "Hand Sign 1");
+            enterHandSign(minecraft, 1);
         }
 
         while (ModKeyMappings.HAND_SIGN_2.consumeClick()) {
-            showMessage(minecraft, "Hand Sign 2");
+            enterHandSign(minecraft, 2);
         }
 
+        /*
+         * Do not send a charge packet every client tick. Send immediately
+         * when charging begins, then at most once per second while held.
+         */
         if (ModKeyMappings.CHARGE.isDown()) {
-            PacketDistributor.sendToServer(
-                    new ChargeChakraPayload()
-            );
+            if (chargeRequestCooldown <= 0) {
+                PacketDistributor.sendToServer(
+                        new ChargeChakraPayload()
+                );
+                chargeRequestCooldown = 20;
+            } else {
+                chargeRequestCooldown--;
+            }
+        } else {
+            chargeRequestCooldown = 0;
         }
 
         while (ModKeyMappings.MENU.consumeClick()) {
@@ -113,6 +131,50 @@ public final class ClientKeyEvents {
             PacketDistributor.sendToServer(
                     new RequestStatsPayload()
             );
+        }
+    }
+
+
+    private static void enterHandSign(
+            Minecraft minecraft,
+            int sign
+    ) {
+        if (minecraft.player.tickCount - lastHandSignTick
+                > JutsuConfig.HAND_SIGN_TIMEOUT_TICKS) {
+            clientHandSignCount = 0;
+        }
+
+        CLIENT_HAND_SIGN_CHAIN[clientHandSignCount] = sign;
+        clientHandSignCount++;
+        lastHandSignTick = minecraft.player.tickCount;
+
+        PacketDistributor.sendToServer(
+                new HandSignInputPayload(sign)
+        );
+
+        StringBuilder sequence = new StringBuilder(
+                "Hand Signs: "
+        );
+
+        for (int index = 0;
+             index < clientHandSignCount;
+             index++) {
+            if (index > 0) {
+                sequence.append(" - ");
+            }
+
+            sequence.append(
+                    CLIENT_HAND_SIGN_CHAIN[index]
+            );
+        }
+
+        showMessage(
+                minecraft,
+                sequence.toString()
+        );
+
+        if (clientHandSignCount >= 3) {
+            clientHandSignCount = 0;
         }
     }
 

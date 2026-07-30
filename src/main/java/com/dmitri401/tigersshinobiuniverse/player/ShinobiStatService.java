@@ -3,6 +3,10 @@ package com.dmitri401.tigersshinobiuniverse.player;
 import com.dmitri401.tigersshinobiuniverse.attachment.ModAttachments;
 import com.dmitri401.tigersshinobiuniverse.network.payload.IncreaseStatPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.SyncChakraPayload;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -14,6 +18,16 @@ public final class ShinobiStatService {
      */
     public static final int CHAKRA_STAT_ID = 6;
     public static final int CHAKRA_CONTROL_STAT_ID = 7;
+
+    private static final int CHARGE_INTERVAL_TICKS = 20;
+    private static final int CHAKRA_PER_CHARGE = 4;
+
+    /*
+     * Server-side rate limiting. This prevents modified clients from
+     * bypassing the client packet throttle.
+     */
+    private static final Map<UUID, Integer> LAST_CHARGE_TICK =
+            new ConcurrentHashMap<>();
 
     private ShinobiStatService() {
     }
@@ -28,6 +42,18 @@ public final class ShinobiStatService {
         PacketDistributor.sendToPlayer(
                 player,
                 SyncStatsPayload.from(stats)
+        );
+    }
+
+    public static void syncChakra(ServerPlayer player) {
+        ShinobiStats stats = get(player);
+
+        PacketDistributor.sendToPlayer(
+                player,
+                new SyncChakraPayload(
+                        stats.getChakra(),
+                        stats.getMaxChakra()
+                )
         );
     }
 
@@ -119,22 +145,38 @@ public final class ShinobiStatService {
             return false;
         }
 
-        /*
-         * The client sends while the key is held. Only restore once
-         * every five ticks to avoid charging multiple times per tick.
-         */
-        if (player.tickCount % 20 != 0) {
-            return false;
+        int currentTick = player.tickCount;
+        Integer previousTick =
+                LAST_CHARGE_TICK.get(player.getUUID());
+
+        if (previousTick != null) {
+            int elapsed = currentTick - previousTick;
+
+            /*
+             * Also allow charging after a relog, where the entity tick
+             * counter may be lower than its previous value.
+             */
+            if (elapsed >= 0
+                    && elapsed < CHARGE_INTERVAL_TICKS) {
+                return false;
+            }
         }
 
-        boolean restored = stats.restoreChakra(2);
+        LAST_CHARGE_TICK.put(
+                player.getUUID(),
+                currentTick
+        );
+
+        boolean restored =
+                stats.restoreChakra(CHAKRA_PER_CHARGE);
 
         if (restored) {
-            sync(player);
+            syncChakra(player);
         }
 
         return restored;
     }
+
 
     public static boolean consumeChakra(
             ServerPlayer player,
@@ -145,7 +187,7 @@ public final class ShinobiStatService {
         boolean consumed = stats.consumeChakra(amount);
 
         if (consumed) {
-            sync(player);
+            syncChakra(player);
         }
 
         return consumed;

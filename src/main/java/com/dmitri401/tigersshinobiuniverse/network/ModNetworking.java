@@ -9,9 +9,12 @@ import com.dmitri401.tigersshinobiuniverse.network.payload.WallRunSelectPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.WallRunResetPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.RequestStatsPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.SyncChakraPayload;
+import com.dmitri401.tigersshinobiuniverse.network.payload.HandSignInputPayload;
 import com.dmitri401.tigersshinobiuniverse.player.ShinobiStatService;
 import com.dmitri401.tigersshinobiuniverse.player.NinjaJumpService;
 import com.dmitri401.tigersshinobiuniverse.player.WallRunService;
+import com.dmitri401.tigersshinobiuniverse.jutsu.HandSignChainService;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -33,6 +36,12 @@ public final class ModNetworking {
                 SyncStatsPayload.TYPE,
                 SyncStatsPayload.STREAM_CODEC,
                 ModNetworking::handleStatsSync
+        );
+
+        registrar.playToClient(
+                SyncChakraPayload.TYPE,
+                SyncChakraPayload.STREAM_CODEC,
+                ModNetworking::handleChakraSync
         );
 
         registrar.playToServer(
@@ -77,6 +86,12 @@ public final class ModNetworking {
                 WallRunResetPayload.STREAM_CODEC,
                 ModNetworking::handleWallRunReset
         );
+
+        registrar.playToServer(
+                HandSignInputPayload.TYPE,
+                HandSignInputPayload.STREAM_CODEC,
+                ModNetworking::handleHandSignInput
+        );
     }
 
     private static void handleStatsSync(
@@ -85,6 +100,18 @@ public final class ModNetworking {
     ) {
         if (FMLEnvironment.dist == Dist.CLIENT) {
             ClientStatsSyncBridge.handle(
+                    payload,
+                    context
+            );
+        }
+    }
+
+    private static void handleChakraSync(
+            SyncChakraPayload payload,
+            IPayloadContext context
+    ) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            ClientStatsSyncBridge.handleChakra(
                     payload,
                     context
             );
@@ -166,6 +193,19 @@ public final class ModNetworking {
     ) {
         if (context.player() instanceof ServerPlayer serverPlayer) {
             WallRunService.reset(serverPlayer);
+        }
+    }
+
+
+    private static void handleHandSignInput(
+            HandSignInputPayload payload,
+            IPayloadContext context
+    ) {
+        if (context.player() instanceof ServerPlayer serverPlayer) {
+            HandSignChainService.enterSign(
+                    serverPlayer,
+                    payload.sign()
+            );
         }
     }
 

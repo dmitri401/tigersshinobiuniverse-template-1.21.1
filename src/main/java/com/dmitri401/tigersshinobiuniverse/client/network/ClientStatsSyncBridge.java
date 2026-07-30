@@ -1,8 +1,13 @@
 package com.dmitri401.tigersshinobiuniverse.client.network;
 
+import com.dmitri401.tigersshinobiuniverse.client.data.ClientShinobiStats;
+import com.dmitri401.tigersshinobiuniverse.network.payload.SyncChakraPayload;
 import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+/**
+ * Lightweight client cache used by movement checks and the HUD.
+ */
 public final class ClientStatsSyncBridge {
 
     private static volatile boolean ninja;
@@ -16,21 +21,29 @@ public final class ClientStatsSyncBridge {
             SyncStatsPayload payload,
             IPayloadContext context
     ) {
-        /*
-         * Cache the values needed by the HUD as soon as the server
-         * sends a SyncStatsPayload.
-         */
         ninja = payload.isNinja();
         chakra = Math.max(0, payload.chakra());
         maxChakra = Math.max(1, payload.maxChakra());
 
-        /*
-         * Keep the existing handler so the rest of your client UI
-         * continues receiving all synchronized shinobi stats.
-         */
         ClientPayloadHandlers.handleStatsSync(
                 payload,
                 context
+        );
+    }
+
+    public static void handleChakra(
+            SyncChakraPayload payload,
+            IPayloadContext context
+    ) {
+        maxChakra = Math.max(1, payload.maxChakra());
+        chakra = Math.max(
+                0,
+                Math.min(payload.chakra(), maxChakra)
+        );
+
+        ClientShinobiStats.updateChakra(
+                chakra,
+                maxChakra
         );
     }
 

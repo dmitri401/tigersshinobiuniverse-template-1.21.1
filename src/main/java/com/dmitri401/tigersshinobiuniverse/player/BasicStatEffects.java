@@ -10,6 +10,8 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
  * Applies basic stats to vanilla Minecraft attributes.
+ * Permanent-stat changes call apply immediately; the tick event is only
+ * a low-frequency safety check.
  */
 @EventBusSubscriber(modid = TigersShinobiUniverse.MOD_ID)
 public final class BasicStatEffects {
@@ -20,7 +22,7 @@ public final class BasicStatEffects {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player
-                && player.tickCount % 20 == 0) {
+                && player.tickCount % 100 == 0) {
             apply(player);
         }
     }

@@ -20,6 +20,38 @@ public final class ClientShinobiStats {
         }
     }
 
+
+    public static void updateChakra(
+            int chakra,
+            int maxChakra
+    ) {
+        int safeMaxChakra = Math.max(1, maxChakra);
+        int safeChakra = Math.max(
+                0,
+                Math.min(chakra, safeMaxChakra)
+        );
+
+        SyncStatsPayload old = current;
+
+        current = new SyncStatsPayload(
+                old.isNinja(),
+                old.clanId(),
+                old.level(),
+                old.ninjaExperience(),
+                safeChakra,
+                safeMaxChakra,
+                old.chakraControl(),
+                old.ninjutsu(),
+                old.taijutsu(),
+                old.genjutsu(),
+                old.strength(),
+                old.defense(),
+                old.agility(),
+                old.vitality(),
+                old.statPoints()
+        );
+    }
+
     public static void reset() {
         current = createDefault();
     }
