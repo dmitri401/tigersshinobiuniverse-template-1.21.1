@@ -23,8 +23,11 @@ public final class WallRunService {
     private static final double MAX_SURFACE_DISTANCE = 4.0D;
     private static final double MAX_FALL_DISTANCE = 5.0D;
     private static final double MAX_SELECTION_DISTANCE_SQUARED = 36.0D;
+    private static final int MAX_RESTORE_ATTEMPTS = 40;
 
     private static final Map<UUID, WallRunState> ACTIVE =
+            new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> PENDING_RESTORES =
             new ConcurrentHashMap<>();
 
     private WallRunService() {
@@ -92,6 +95,7 @@ public final class WallRunService {
                         gravityAxisPosition(player, gravityDirection)
                 )
         );
+        PENDING_RESTORES.remove(player.getUUID());
 
         saveWallRun(player, gravityDirection);
         player.resetFallDistance();
@@ -103,6 +107,7 @@ public final class WallRunService {
 
     public static void reset(ServerPlayer player) {
         ACTIVE.remove(player.getUUID());
+        PENDING_RESTORES.remove(player.getUUID());
         clearSavedWallRun(player);
 
         if (GravityChangerAPI.canChangeGravity(player)) {
@@ -137,13 +142,43 @@ public final class WallRunService {
             return;
         }
 
-        /*
-         * ACTIVE is runtime-only and disappears when the player logs out.
-         * Restore the serialized gravity before vanilla movement runs so the
-         * player never receives a normal-gravity falling tick first.
-         */
-        if (!ACTIVE.containsKey(player.getUUID())) {
-            restoreSavedWallRun(player);
+        Integer attemptsRemaining =
+                PENDING_RESTORES.get(player.getUUID());
+
+        if (attemptsRemaining == null) {
+            return;
+        }
+
+        RestoreResult result = restoreSavedWallRun(player);
+
+        if (result != RestoreResult.RETRY
+                || attemptsRemaining <= 1) {
+            PENDING_RESTORES.remove(player.getUUID());
+        } else {
+            PENDING_RESTORES.put(
+                    player.getUUID(),
+                    attemptsRemaining - 1
+            );
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLogin(
+            PlayerEvent.PlayerLoggedInEvent event
+    ) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+
+        WallRunData data = player.getData(
+                ModAttachments.WALL_RUN_DATA
+        );
+
+        if (data.isActive()) {
+            PENDING_RESTORES.put(
+                    player.getUUID(),
+                    MAX_RESTORE_ATTEMPTS
+            );
         }
     }
 
@@ -258,7 +293,7 @@ public final class WallRunService {
 
         /*
          * Keep the serialized attachment active, but remove the runtime entry.
-         * It will be reconstructed on the first server tick after login.
+         * It will be reconstructed during the bounded post-login retry window.
          */
         if (ACTIVE.containsKey(player.getUUID())) {
             Direction gravityDirection =
@@ -268,6 +303,7 @@ public final class WallRunService {
         }
 
         ACTIVE.remove(player.getUUID());
+        PENDING_RESTORES.remove(player.getUUID());
     }
 
     private static void saveWallRun(
@@ -289,7 +325,7 @@ public final class WallRunService {
         ).clear();
     }
 
-    private static boolean restoreSavedWallRun(
+    private static RestoreResult restoreSavedWallRun(
             ServerPlayer player
     ) {
         WallRunData data = player.getData(
@@ -297,7 +333,7 @@ public final class WallRunService {
         );
 
         if (!data.isActive()) {
-            return false;
+            return RestoreResult.INACTIVE;
         }
 
         Direction gravityDirection =
@@ -318,7 +354,7 @@ public final class WallRunService {
                 || player.isFallFlying()
                 || player.isUnderWater()) {
             reset(player);
-            return false;
+            return RestoreResult.INACTIVE;
         }
 
         /*
@@ -326,7 +362,7 @@ public final class WallRunService {
          * attachment intact and try again on the next tick in that case.
          */
         if (!GravityChangerAPI.canChangeGravity(player)) {
-            return false;
+            return RestoreResult.RETRY;
         }
 
         Direction previousGravityDirection =
@@ -360,7 +396,7 @@ public final class WallRunService {
         );
 
         player.resetFallDistance();
-        return true;
+        return RestoreResult.RESTORED;
     }
 
     /**
@@ -450,5 +486,11 @@ public final class WallRunService {
             this.planeCoordinate = planeCoordinate;
             this.fallReferenceCoordinate = fallReferenceCoordinate;
         }
+    }
+
+    private enum RestoreResult {
+        INACTIVE,
+        RETRY,
+        RESTORED
     }
 }

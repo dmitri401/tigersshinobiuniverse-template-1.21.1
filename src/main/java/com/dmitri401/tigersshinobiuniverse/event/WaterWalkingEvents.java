@@ -1,6 +1,7 @@
 package com.dmitri401.tigersshinobiuniverse.event;
 
 import com.dmitri401.tigersshinobiuniverse.skill.WaterWalkingSkill;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -12,14 +13,16 @@ public final class WaterWalkingEvents {
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Pre event) {
-        WaterWalkingSkill.tick(event.getEntity());
+        if (event.getEntity() instanceof ServerPlayer player) {
+            WaterWalkingSkill.tick(player);
+        }
     }
 
     @SubscribeEvent
     public static void onLivingJump(
             LivingEvent.LivingJumpEvent event
     ) {
-        if (event.getEntity() instanceof net.minecraft.world.entity.player.Player player) {
+        if (event.getEntity() instanceof ServerPlayer player) {
             WaterWalkingSkill.handleWaterJump(player);
         }
     }

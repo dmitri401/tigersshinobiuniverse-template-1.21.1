@@ -40,6 +40,7 @@ public final class ClientKeyEvents {
     private static final int[] CLIENT_HAND_SIGN_CHAIN = new int[3];
     private static int clientHandSignCount;
     private static int lastHandSignTick = Integer.MIN_VALUE;
+    private static boolean hadPlayer;
 
     private ClientKeyEvents() {
     }
@@ -49,20 +50,33 @@ public final class ClientKeyEvents {
         Minecraft minecraft = Minecraft.getInstance();
 
         if (minecraft.player == null || minecraft.level == null) {
+            if (hadPlayer) {
+                ClientStatsSyncBridge.reset();
+            }
+
+            hadPlayer = false;
             wasJumpDown = false;
             wasUseDown = false;
             chargeRequestCooldown = 0;
+            clientJumpStarted = false;
+            clientBoostTicks = 0;
+            clientHandSignCount = 0;
             return;
         }
 
+        hadPlayer = true;
+        boolean isNinja = ClientStatsSyncBridge.isNinja();
+
         boolean jumpDown = minecraft.options.keyJump.isDown();
 
-        if (jumpDown != wasJumpDown) {
+        if (isNinja && jumpDown != wasJumpDown) {
             PacketDistributor.sendToServer(
                     new NinjaJumpPayload(jumpDown)
             );
 
             wasJumpDown = jumpDown;
+        } else if (!isNinja) {
+            wasJumpDown = false;
         }
 
         handleClientNinjaJump(
@@ -75,7 +89,7 @@ public final class ClientKeyEvents {
          * wall running. The server remains authoritative over the reset.
          */
         while (ModKeyMappings.WALL_RUN.consumeClick()) {
-            if (ModKeyMappings.ALT.isDown()) {
+            if (isNinja && ModKeyMappings.ALT.isDown()) {
                 PacketDistributor.sendToServer(
                         new WallRunResetPayload()
                 );
@@ -84,7 +98,8 @@ public final class ClientKeyEvents {
 
         boolean useDown = minecraft.options.keyUse.isDown();
 
-        if (!ModKeyMappings.ALT.isDown()
+        if (isNinja
+                && !ModKeyMappings.ALT.isDown()
                 && ModKeyMappings.WALL_RUN.isDown()
                 && useDown
                 && !wasUseDown
@@ -101,18 +116,22 @@ public final class ClientKeyEvents {
         wasUseDown = useDown;
 
         while (ModKeyMappings.HAND_SIGN_1.consumeClick()) {
-            enterHandSign(minecraft, 1);
+            if (isNinja) {
+                enterHandSign(minecraft, 1);
+            }
         }
 
         while (ModKeyMappings.HAND_SIGN_2.consumeClick()) {
-            enterHandSign(minecraft, 2);
+            if (isNinja) {
+                enterHandSign(minecraft, 2);
+            }
         }
 
         /*
          * Do not send a charge packet every client tick. Send immediately
          * when charging begins, then at most once per second while held.
          */
-        if (ModKeyMappings.CHARGE.isDown()) {
+        if (isNinja && ModKeyMappings.CHARGE.isDown()) {
             if (chargeRequestCooldown <= 0) {
                 PacketDistributor.sendToServer(
                         new ChargeChakraPayload()

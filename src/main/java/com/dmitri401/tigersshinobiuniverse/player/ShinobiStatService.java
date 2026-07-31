@@ -177,6 +177,10 @@ public final class ShinobiStatService {
         return restored;
     }
 
+    public static void clearRuntimeState(ServerPlayer player) {
+        LAST_CHARGE_TICK.remove(player.getUUID());
+    }
+
 
     public static boolean consumeChakra(
             ServerPlayer player,

@@ -1,10 +1,8 @@
 package com.dmitri401.tigersshinobiuniverse.player;
 
 import com.dmitri401.tigersshinobiuniverse.attachment.ModAttachments;
-import com.dmitri401.tigersshinobiuniverse.network.payload.SyncStatsPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class ChakraRegenEvents {
 
@@ -45,16 +43,8 @@ public final class ChakraRegenEvents {
             return;
         }
 
-        stats.setChakra(
-                Math.min(
-                        stats.getChakra() + REGEN_AMOUNT,
-                        stats.getMaxChakra()
-                )
-        );
-
-        PacketDistributor.sendToPlayer(
-                player,
-                SyncStatsPayload.from(stats)
-        );
+        if (stats.restoreChakra(REGEN_AMOUNT)) {
+            ShinobiStatService.syncChakra(player);
+        }
     }
 }

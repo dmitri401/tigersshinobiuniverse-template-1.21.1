@@ -16,29 +16,20 @@ public final class PlayerStatEvents {
     }
 
     @SubscribeEvent
-    public static void onPlayerLogin(
-            PlayerEvent.PlayerLoggedInEvent event
-    ) {
-        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            ShinobiStatService.sync(serverPlayer);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onPlayerRespawn(
-            PlayerEvent.PlayerRespawnEvent event
-    ) {
-        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            ShinobiStatService.sync(serverPlayer);
-        }
-    }
-
-    @SubscribeEvent
     public static void onDimensionChange(
             PlayerEvent.PlayerChangedDimensionEvent event
     ) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             ShinobiStatService.sync(serverPlayer);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLogout(
+            PlayerEvent.PlayerLoggedOutEvent event
+    ) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            ShinobiStatService.clearRuntimeState(serverPlayer);
         }
     }
 }

@@ -29,6 +29,15 @@ public final class WaterWalkingSkill {
     public static void tick(Player player) {
         Level level = player.level();
 
+        if (player instanceof ServerPlayer serverPlayer) {
+            ShinobiStats stats = ShinobiStatService.get(serverPlayer);
+
+            if (!stats.isNinja()
+                    || WallRunService.isWallRunning(serverPlayer)) {
+                return;
+            }
+        }
+
         /*
          * Wall running has priority over water walking. The gravity-direction
          * check runs on both logical sides, preventing the client from applying
@@ -36,28 +45,6 @@ public final class WaterWalkingSkill {
          */
         if (GravityChangerAPI.getGravityDirection(player) != Direction.DOWN) {
             return;
-        }
-
-        /*
-         * Keep the explicit server-side state check as well. This covers the
-         * brief transition tick before the changed gravity reaches the client.
-         */
-        if (player instanceof ServerPlayer serverPlayer
-                && WallRunService.isWallRunning(serverPlayer)) {
-            return;
-        }
-
-        /*
-         * ShinobiStatService.get currently accepts ServerPlayer only,
-         * so ninja validation is performed on the logical server.
-         */
-        if (player instanceof ServerPlayer serverPlayer) {
-            ShinobiStats stats = ShinobiStatService.get(serverPlayer);
-
-            if (!stats.isNinja()) {
-                return;
-            }
-
         }
 
         // Sneaking intentionally disables water walking.
@@ -133,24 +120,21 @@ public final class WaterWalkingSkill {
     }
 
     public static void handleWaterJump(Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            ShinobiStats stats = ShinobiStatService.get(serverPlayer);
+
+            if (!stats.isNinja()
+                    || WallRunService.isWallRunning(serverPlayer)) {
+                return;
+            }
+        }
+
         /*
          * Water walking only operates with normal downward gravity.
          * Wall-running jumps are handled by their own movement system.
          */
         if (GravityChangerAPI.getGravityDirection(player) != Direction.DOWN) {
             return;
-        }
-
-        if (player instanceof ServerPlayer serverPlayer) {
-            if (WallRunService.isWallRunning(serverPlayer)) {
-                return;
-            }
-
-            ShinobiStats stats = ShinobiStatService.get(serverPlayer);
-
-            if (!stats.isNinja()) {
-                return;
-            }
         }
 
         if (player.isShiftKeyDown() || player.isUnderWater()) {

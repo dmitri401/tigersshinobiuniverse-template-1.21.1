@@ -10,6 +10,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.Map;
@@ -47,6 +48,11 @@ public final class NinjaJumpService {
         );
 
         if (!stats.isNinja()) {
+            JUMP_STATES.remove(player.getUUID());
+            return;
+        }
+
+        if (!held) {
             JUMP_STATES.remove(player.getUUID());
             return;
         }
@@ -162,6 +168,11 @@ public final class NinjaJumpService {
         if (player.onGround()) {
             state.jumpStarted = false;
             state.boostTicks = 0;
+
+            if (!state.held) {
+                JUMP_STATES.remove(player.getUUID());
+            }
+
             return;
         }
 
@@ -193,6 +204,27 @@ public final class NinjaJumpService {
 
         player.hasImpulse = true;
         state.boostTicks++;
+    }
+
+    @SubscribeEvent
+    public static void onLogout(
+            PlayerEvent.PlayerLoggedOutEvent event
+    ) {
+        JUMP_STATES.remove(event.getEntity().getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onChangedDimension(
+            PlayerEvent.PlayerChangedDimensionEvent event
+    ) {
+        JUMP_STATES.remove(event.getEntity().getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(
+            PlayerEvent.PlayerRespawnEvent event
+    ) {
+        JUMP_STATES.remove(event.getEntity().getUUID());
     }
 
     private static boolean canNinjaJump(

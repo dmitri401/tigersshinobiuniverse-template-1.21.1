@@ -19,7 +19,6 @@ public record SyncStatsPayload(
         int ninjutsu,
         int taijutsu,
         int genjutsu,
-        int strength,
         int defense,
         int agility,
         int vitality,
@@ -54,7 +53,6 @@ public record SyncStatsPayload(
         ByteBufCodecs.VAR_INT.encode(buffer, payload.ninjutsu());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.taijutsu());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.genjutsu());
-        ByteBufCodecs.VAR_INT.encode(buffer, payload.strength());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.defense());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.agility());
         ByteBufCodecs.VAR_INT.encode(buffer, payload.vitality());
@@ -64,7 +62,6 @@ public record SyncStatsPayload(
     private static SyncStatsPayload decode(ByteBuf buffer) {
         return new SyncStatsPayload(
                 ByteBufCodecs.BOOL.decode(buffer),
-                ByteBufCodecs.VAR_INT.decode(buffer),
                 ByteBufCodecs.VAR_INT.decode(buffer),
                 ByteBufCodecs.VAR_INT.decode(buffer),
                 ByteBufCodecs.VAR_INT.decode(buffer),
@@ -93,7 +90,6 @@ public record SyncStatsPayload(
                 stats.getNinjutsu(),
                 stats.getTaijutsu(),
                 stats.getGenjutsu(),
-                stats.getDefense(),
                 stats.getDefense(),
                 stats.getAgility(),
                 stats.getVitality(),

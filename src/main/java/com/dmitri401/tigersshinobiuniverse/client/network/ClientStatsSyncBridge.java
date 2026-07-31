@@ -58,4 +58,11 @@ public final class ClientStatsSyncBridge {
     public static int getMaxChakra() {
         return maxChakra;
     }
+
+    public static void reset() {
+        ninja = false;
+        chakra = 0;
+        maxChakra = 1;
+        ClientShinobiStats.reset();
+    }
 }
